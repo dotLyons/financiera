@@ -13,7 +13,7 @@ class CreateCreditData
         public float $amountNet,
         public float $interestRate,
         public int $installmentsCount,
-        public PaymentFrequencyEnum $frequency,
+        public PaymentFrequencyEnum $paymentFrequency,
         public Carbon $startDate,
     ) {}
 
@@ -25,7 +25,7 @@ class CreateCreditData
             amountNet: (float) $data['amount_net'],
             interestRate: (float) $data['interest_rate'],
             installmentsCount: (int) $data['installments_count'],
-            frequency: PaymentFrequencyEnum::from($data['frequency']),
+            paymentFrequency: PaymentFrequencyEnum::from($data['payment_frequency']),
             startDate: Carbon::parse($data['start_date']),
         );
     }
