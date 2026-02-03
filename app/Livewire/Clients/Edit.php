@@ -3,7 +3,7 @@
 namespace App\Livewire\Clients;
 
 use App\Src\Client\Actions\UpdateClientAction;
-use App\Src\Client\dtoS\UpdateClientData;
+use App\Src\Client\DTOs\UpdateClientData;
 use App\Src\Client\Models\ClientModel;
 use App\Src\Client\Enum\ClientStatusEnum;
 use Illuminate\Validation\Rule;

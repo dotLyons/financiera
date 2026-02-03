@@ -28,7 +28,7 @@ class CreateCreditAction
                 'amount_total' => $totalAmount,
                 'interest_rate' => $data->interestRate,
                 'installments_count' => $data->installmentsCount,
-                'payment_frequency' => $data->frequency,
+                'payment_frequency' => $data->paymentFrequency,
                 'start_date' => $data->startDate,
                 'status' => 'active',
             ]);
@@ -44,7 +44,7 @@ class CreateCreditAction
         $dueDate = $data->startDate->copy();
 
         for ($i = 1 ; $i <= $data->installmentsCount ; $i++) {
-            match ($data->frequency) {
+            match ($data->paymentFrequency) {
                 PaymentFrequencyEnum::DAILY => $dueDate->addDay(),
                 PaymentFrequencyEnum::WEEKLY => $dueDate->addWeek(),
                 PaymentFrequencyEnum::MONTHLY => $dueDate->addMonth(),

@@ -85,40 +85,46 @@
                 <h3 class="text-lg font-bold text-gray-800 mb-4">Salud de Cobranza (Mes)</h3>
 
                 <div class="space-y-6">
+                    @php
+                        // Lógica estricta de colores
+                        if ($collectionProgress >= 100) {
+                            $barColor = 'bg-yellow-400'; // Dorado visual
+                            $textColor = 'text-yellow-600';
+                            $statusText = '¡Meta Alcanzada!';
+                        } elseif ($collectionProgress >= 80) {
+                            $barColor = 'bg-green-500';
+                            $textColor = 'text-green-600';
+                            $statusText = 'Excelente';
+                        } elseif ($collectionProgress >= 50) {
+                            $barColor = 'bg-yellow-500';
+                            $textColor = 'text-yellow-600';
+                            $statusText = 'Regular';
+                        } else {
+                            $barColor = 'bg-red-500';
+                            $textColor = 'text-red-600';
+                            $statusText = 'Crítico';
+                        }
+                    @endphp
+
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="font-medium text-gray-700">Meta de Recaudación</span>
-                            <span class="text-gray-500">{{ number_format($collectionProgress, 1) }}%</span>
+                            <span class="{{ $textColor }} font-bold">{{ number_format($collectionProgress, 1) }}%
+                                ({{ $statusText }})</span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-4">
-                            <div class="bg-green-500 h-4 rounded-full transition-all duration-500"
-                                style="width: {{ $collectionProgress > 100 ? 100 : $collectionProgress }}%"></div>
+
+                        <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                            <div class="{{ $barColor }} h-4 rounded-full transition-all duration-500 shadow-sm"
+                                style="width: {{ $collectionProgress > 100 ? 100 : $collectionProgress }}%">
+                            </div>
                         </div>
+
                         <div class="flex justify-between text-xs text-gray-400 mt-2">
                             <span>Actual: ${{ number_format($collectedThisMonth, 0) }}</span>
                             <span>Esperado: ${{ number_format($expectedCollectionThisMonth, 0) }}</span>
                         </div>
                     </div>
 
-                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-600">
-                        <p>
-                            <span class="font-bold text-indigo-600">Análisis Rápido:</span>
-                            @if ($collectionProgress >= 90)
-                                ¡Excelente trabajo! La cobranza está casi al día.
-                            @elseif($collectionProgress >= 50)
-                                Buen ritmo, pero hay margen de mejora en el seguimiento.
-                            @else
-                                Atención: La recaudación está baja respecto a los vencimientos.
-                            @endif
-                        </p>
-                    </div>
-
-                    <div class="border-t pt-4">
-                        <a href="{{ route('treasury.index') }}"
-                            class="block w-full text-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            Ir a Tesorería
-                        </a>
-                    </div>
                 </div>
             </div>
 

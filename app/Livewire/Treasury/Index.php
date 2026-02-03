@@ -4,6 +4,9 @@ namespace App\Livewire\Treasury;
 
 use App\Models\User;
 use App\Src\CashOperation\Models\CashOperationModel;
+use App\Src\Installments\Models\InstallmentModel;
+use App\Src\Payments\Models\PaymentsModel;
+use Carbon\Carbon;
 use Livewire\Component;
 
 class Index extends Component
@@ -12,32 +15,58 @@ class Index extends Component
 
     public function render()
     {
-        // 1. Obtener Cobradores
-        $collectors = User::where('role', 'collector')->get();
+        $today = Carbon::today();
+        $startOfMonth = $today->copy()->startOfMonth();
+        $endOfMonth = $today->copy()->endOfMonth();
 
-        // 2. Calcular Saldos en Tiempo Real
-        // Esto podría optimizarse con SQL raw.
-        $collectors->map(function ($collector) {
-            $ingresos = CashOperationModel::where('user_id', $collector->id)->where('type', 'income')->sum('amount');
-            $egresos = CashOperationModel::where('user_id', $collector->id)->where('type', 'expense')->sum('amount');
+        // 1. Obtenemos cobradores y calculamos sus métricas en memoria
+        $collectors = User::where('role', 'collector')
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($collector) use ($today, $startOfMonth, $endOfMonth) {
 
-            $collector->balance = $ingresos - $egresos; // Propiedad dinámica
-            return $collector;
-        });
+                // A. Caja Diaria (Efectivo vs Transferencia HOY)
+                $todaysPayments = PaymentsModel::where('user_id', $collector->id)
+                    ->whereDate('payment_date', $today)
+                    ->get();
 
-        // 3. Calcular Caja Central (Admin actual)
-        $adminId = auth()->id();
-        $adminIngresos = CashOperationModel::where('user_id', $adminId)->where('type', 'income')->sum('amount');
-        $adminEgresos = CashOperationModel::where('user_id', $adminId)->where('type', 'expense')->sum('amount');
-        $centralBalance = $adminIngresos - $adminEgresos;
+                $collector->cash_in_hand = $todaysPayments->where('payment_method.value', 'cash')->sum('amount');
+                $collector->transfers_in_hand = $todaysPayments->where('payment_method.value', 'transfer')->sum('amount');
+                $collector->total_today = $collector->cash_in_hand + $collector->transfers_in_hand;
 
-        // 4. Dinero total en la calle (Suma de lo que tienen los cobradores)
-        $streetMoney = $collectors->sum('balance');
+                // B. Rendimiento Mensual (Para la barra de progreso)
+                // -----------------------------------------------------
+
+                // Meta: Suma de cuotas asignadas a este cobrador que vencen ESTE MES
+                $expectedMonth = InstallmentModel::whereHas('credit', function ($q) use ($collector) {
+                    $q->where('collector_id', $collector->id)
+                        ->where('status', 'active');
+                })
+                    ->whereBetween('due_date', [$startOfMonth, $endOfMonth])
+                    ->sum('amount');
+
+                // Realidad: Suma de pagos recibidos por este cobrador ESTE MES
+                $collectedMonth = PaymentsModel::where('user_id', $collector->id)
+                    ->whereBetween('payment_date', [$startOfMonth, $endOfMonth])
+                    ->sum('amount');
+
+                // Cálculo del porcentaje (evitando división por cero)
+                $collector->monthly_goal_percent = $expectedMonth > 0
+                    ? ($collectedMonth / $expectedMonth) * 100
+                    : 0;
+
+                return $collector;
+            });
+
+        // Totales Generales para los KPIs superiores
+        $totalCash = $collectors->sum('cash_in_hand');
+        $totalTransfer = $collectors->sum('transfers_in_hand');
 
         return view('livewire.treasury.index', [
             'collectors' => $collectors,
-            'centralBalance' => $centralBalance,
-            'streetMoney' => $streetMoney
+            'totalCash' => $totalCash,
+            'totalTransfer' => $totalTransfer,
+            'grandTotal' => $totalCash + $totalTransfer,
         ])->layout('layouts.app');
     }
 }

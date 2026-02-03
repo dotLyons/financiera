@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserRole::class,
+            'hours' => \App\Http\Middleware\CheckSystemHours::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
