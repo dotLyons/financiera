@@ -3,8 +3,7 @@
 namespace App\Livewire\Treasury;
 
 use App\Models\User;
-use App\Src\Treasury\Actions\ProcessSurrenderAction;
-use App\Src\Treasury\DTOs\SurrenderData;
+use App\Src\CashOperation\Actions\SurrenderCashAction;
 use Livewire\Component;
 
 class SurrenderModal extends Component
@@ -27,32 +26,37 @@ class SurrenderModal extends Component
     {
         $this->collector = User::find($collectorId);
         $this->maxAmount = $currentBalance;
-        $this->amount = $currentBalance; // Sugerimos rendir todo
+
+        $this->amount = $currentBalance > 0 ? $currentBalance : '';
+
         $this->isOpen = true;
     }
 
     public function closeModal()
     {
         $this->isOpen = false;
-        $this->reset(['collector', 'amount', 'notes']);
+        $this->reset(['collector', 'amount', 'notes', 'maxAmount']);
     }
 
-    public function save(ProcessSurrenderAction $action)
+    public function save(SurrenderCashAction $action)
     {
         $this->validate();
 
-        $dto = SurrenderData::fromArray([
-            'collector_id' => $this->collector->id,
-            'amount' => $this->amount,
-            'notes' => $this->notes,
-        ]);
-
-        $action->execute($dto);
+        $action->execute(
+            collectorId: $this->collector->id,
+            adminId: auth()->id(), // El usuario logueado (Admin) es quien recibe
+            amount: $this->amount,
+            notes: $this->notes
+        );
 
         $this->closeModal();
-        $this->dispatch('surrenderProcessed'); // Refresca el tablero principal
-        session()->flash('flash.banner', 'Rendición procesada correctamente. El dinero ahora está en Caja Central.');
-        session()->flash('flash.bannerStyle', 'success');
+
+        $this->dispatch('surrenderProcessed');
+
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => 'Rendición procesada correctamente. Saldo actualizado.'
+        ]);
     }
 
     public function render()

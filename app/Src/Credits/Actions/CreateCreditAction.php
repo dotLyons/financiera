@@ -14,7 +14,6 @@ class CreateCreditAction
     public function execute(CreateCreditData $data)
     {
         $totalAmount = $data->amountNet * (1 + $data->interestRate / 100);
-
         $totalAmount = round($totalAmount, 2);
 
         $installmentAmount = $totalAmount / $data->installmentsCount;
@@ -41,21 +40,30 @@ class CreateCreditAction
 
     private function generateInstallments(CreditsModel $credit, CreateCreditData $data, float $amount): void
     {
-        $dueDate = $data->startDate->copy();
+        $currentDate = $data->startDate->copy();
 
-        for ($i = 1 ; $i <= $data->installmentsCount ; $i++) {
-            match ($data->paymentFrequency) {
-                PaymentFrequencyEnum::DAILY => $dueDate->addDay(),
-                PaymentFrequencyEnum::WEEKLY => $dueDate->addWeek(),
-                PaymentFrequencyEnum::MONTHLY => $dueDate->addMonth(),
-            };
+        for ($i = 1; $i <= $data->installmentsCount; $i++) {
+
+            if ($data->paymentFrequency === PaymentFrequencyEnum::DAILY) {
+                $currentDate->addWeekday();
+            } else {
+                match ($data->paymentFrequency) {
+                    PaymentFrequencyEnum::WEEKLY => $currentDate->addWeek(),
+                    PaymentFrequencyEnum::MONTHLY => $currentDate->addMonth(),
+                    default => $currentDate->addWeekday(), // Fallback
+                };
+
+                if ($currentDate->isWeekend()) {
+                    $currentDate->nextWeekday();
+                }
+            }
 
             InstallmentModel::create([
                 'credit_id' => $credit->id,
                 'installment_number' => $i,
                 'amount' => $amount,
                 'amount_paid' => 0,
-                'due_date' => $dueDate->copy(),
+                'due_date' => $currentDate->copy(),
                 'status' => InstallmentStatusEnum::PENDING,
             ]);
         }

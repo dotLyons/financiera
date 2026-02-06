@@ -13,8 +13,11 @@ class CreateClientAction
             'last_name' => $data->lastName,
             'first_name' => $data->firstName,
             'dni' => $data->dni,
+            'rubro' => $data->rubro,
             'phone' => $data->phone,
+            'reference_phone' => $data->referencePhone,
             'address' => $data->address,
+            'second_address' => $data->secondAddress,
             'notes' => $data->notes,
             'created_by' => $data->createdBy,
             'status' => 'active', // Default por lógica

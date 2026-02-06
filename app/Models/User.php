@@ -34,6 +34,7 @@ class User extends Authenticatable
         'password',
         'role',
         'is_active',
+        'wallet_balance',
     ];
 
     /**
@@ -85,5 +86,11 @@ class User extends Authenticatable
     public function payments()
     {
         return $this->hasMany(PaymentsModel::class, 'user_id');
+    }
+
+    // Relación para ver sus rendiciones pasadas
+    public function surrenders()
+    {
+        return $this->hasMany(\App\Src\CashOperation\Models\CashSurrenderModel::class, 'collector_id');
     }
 }

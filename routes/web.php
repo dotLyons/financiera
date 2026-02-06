@@ -29,8 +29,7 @@ Route::middleware([
     // =========================================================================
     // Todo lo que esté aquí adentro será inaccesible si se intenta entrar
     // fuera del horario permitido definido en App\Http\Middleware\CheckSystemHours
-    Route::middleware(['hours'])->group(function () {
-
+    //Route::middleware(['hours'])->group(function () {
         // 🚦 CONTROLADOR DE TRÁFICO (Redirección inteligente)
         Route::get('/dashboard', function () {
             $user = auth()->user();
@@ -39,7 +38,6 @@ Route::middleware([
             }
             return redirect()->route('admin.dashboard');
         })->name('dashboard');
-
 
         // 🛡️ GRUPO SOLO ADMINISTRADORES
         Route::middleware(['role:admin'])->group(function () {
@@ -62,11 +60,22 @@ Route::middleware([
             // Rutas para Reportes PDF
             Route::get('/report/client/{client}', [ReportController::class, 'clientSummary'])->name('report.client');
             Route::get('/report/credit/{credit}', [ReportController::class, 'creditDetail'])->name('report.credit');
+            Route::get('/contract/new/{credit}', [ReportController::class, 'printContract'])->name('contract.new');
+            Route::get('/contract/refinance/{credit}', [ReportController::class, 'printRefinance'])->name('contract.refinance');
+            Route::get('/receipt/{payment}', [ReportController::class, 'printPaymentReceipt'])->name('receipt.print');
+            Route::get('/report/daily/{user}/{date}', [ReportController::class, 'printDailyReport'])->name('report.daily');
 
             // Cobradores
             Route::get('/collectors', \App\Livewire\Collectors\Index::class)->name('collectors.index');
             Route::get('/collectors/create', \App\Livewire\Collectors\Create::class)->name('collectors.create');
             Route::get('/collectors/{user}/edit', \App\Livewire\Collectors\Edit::class)->name('collectors.edit');
+            Route::get('/collectors/{user}/history', \App\Livewire\Collectors\DailyHistory::class)->name('collectors.history');
+
+            // Pantalla de Reportes
+            Route::get('/reports', \App\Livewire\Reports\Index::class)->name('reports.index');
+
+            // Descarga PDF
+            Route::get('/report/monthly/{month}/{year}', [ReportController::class, 'printMonthlyReport'])->name('report.monthly');
         });
 
 
@@ -76,6 +85,6 @@ Route::middleware([
             Route::get('/collector/checkout/{installment}', \App\Livewire\Collector\Checkout::class)->name('collector.checkout');
             Route::get('/collector/my-cash', \App\Livewire\Collector\MyCash::class)->name('collector.my-cash');
         });
-    }); // Fin del grupo 'hours'
+    //}); // Fin del grupo 'hours'
 
 });

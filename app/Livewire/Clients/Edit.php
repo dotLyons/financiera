@@ -17,8 +17,11 @@ class Edit extends Component
     public $last_name;
     public $first_name;
     public $dni;
+    public $rubro;
     public $phone;
+    public $reference_phone;
     public $address;
+    public $second_address;
     public $notes;
     public $status;
 
@@ -30,8 +33,10 @@ class Edit extends Component
         $this->last_name = $client->last_name;
         $this->first_name = $client->first_name;
         $this->dni = $client->dni;
-        $this->phone = $client->phone;
+        $this->rubro = $client->rubro;
+        $this->reference_phone = $client->reference_phone;
         $this->address = $client->address;
+        $this->second_address = $client->second_address;
         $this->notes = $client->notes;
         $this->status = $client->status->value;
     }
@@ -51,8 +56,11 @@ class Edit extends Component
             'first_name' => 'required|string|max:255',
             // TRUCO: Validar único en la tabla clients, columna dni, PERO ignorando el ID actual
             'dni' => ['required', 'string', 'max:20', Rule::unique('clients', 'dni')->ignore($this->client->id)],
+            'rubro' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
+            'reference_phone' => 'nullable|string|max:50',
             'address' => 'required|string|max:255',
+            'second_address' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
             'status' => ['required', Rule::enum(ClientStatusEnum::class)],
         ]);

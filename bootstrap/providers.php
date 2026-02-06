@@ -4,6 +4,7 @@ return [
     App\Providers\AppServiceProvider::class,
     App\Providers\CashOperationServiceProvider::class,
     App\Providers\ClientServiceProvider::class,
+    App\Providers\CollectorServiceProvider::class,
     App\Providers\CreditServiceProvider::class,
     App\Providers\FortifyServiceProvider::class,
     App\Providers\InstallmentServiceProvider::class,

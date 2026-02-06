@@ -61,23 +61,37 @@
         <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
             <ul class="divide-y divide-gray-100">
                 @forelse($payments as $payment)
-                    <li class="p-4 flex justify-between items-center">
+                    <li class="p-4 flex justify-between items-center hover:bg-gray-50 transition">
                         <div>
                             <p class="text-sm font-bold text-gray-900">
                                 {{ $payment->installment->credit->client->full_name }}
                             </p>
                             <p class="text-xs text-gray-500">
                                 {{ $payment->created_at->format('H:i') }} hs •
+                                Cuota {{ $payment->installment->installment_number }} •
                                 @if ($payment->payment_method->value === 'cash')
                                     Efectivo
                                 @else
                                     Transferencia
                                 @endif
                             </p>
+
+                            <a href="{{ route('receipt.print', $payment->id) }}"
+                                class="inline-flex items-center text-[10px] font-bold text-indigo-600 mt-1.5 hover:text-indigo-800 transition">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                Descargar Comprobante
+                            </a>
                         </div>
-                        <span class="text-sm font-bold text-gray-800">
-                            + ${{ number_format($payment->amount, 0) }}
-                        </span>
+
+                        <div class="text-right">
+                            <span class="text-sm font-bold text-gray-800">
+                                + ${{ number_format($payment->amount, 0) }}
+                            </span>
+                        </div>
                     </li>
                 @empty
                     <li class="p-8 text-center text-gray-400 text-sm">

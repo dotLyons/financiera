@@ -2,7 +2,9 @@
 
 namespace App\Src\Payments\Actions;
 
+use App\Models\User;
 use App\Src\CashOperation\Models\CashOperationModel;
+use App\Src\Credits\Models\CreditsModel;
 use App\Src\Installments\Enums\InstallmentStatusEnum;
 use App\Src\Installments\Models\InstallmentModel;
 use App\Src\Payments\DTOs\CreatePaymentData;
@@ -32,31 +34,33 @@ class ProcessPaymentAction
             $installment->amount_paid += $data->amount;
 
             // Lógica de Estado: ¿Pagó todo o falta?
-            // Usamos una pequeña tolerancia (0.1) por temas de decimales flotantes
             if ($installment->amount_paid >= ($installment->amount - 0.1)) {
                 $installment->status = InstallmentStatusEnum::PAID;
-                $installment->date_paid = now(); // Asumiendo que tienes este campo, si no, ignóralo
+                $installment->date_paid = now();
             } else {
                 $installment->status = InstallmentStatusEnum::PARTIAL;
             }
 
             $installment->save();
 
-            // 4. Verificar si el Crédito Padre se completó (Opcional pero recomendado)
-            // Si todas las cuotas del crédito están pagadas, marcamos el crédito como PAID.
+            // 4. Verificar si el Crédito Padre se completó
             $this->checkCreditStatus($installment->credit_id);
 
-            // 5. Registrar Movimiento en Caja (Cash Operation)
-            // Esto es vital para saber cuánta plata tiene el cobrador encima.
+            // 5. Registrar Movimiento en Caja (Cash Operation - Log Histórico)
             CashOperationModel::create([
                 'user_id' => $data->userId,
                 'payment_id' => $payment->id,
-                'type' => 'income', // ingreso
+                'type' => 'income',
                 'amount' => $data->amount,
                 'concept' => "Cobro Cuota #{$installment->installment_number} - Crédito #{$installment->credit_id}",
                 'operation_date' => now(),
             ]);
 
+            $collector = User::find($data->userId);
+            if ($collector) {
+                $collector->wallet_balance += $data->amount;
+                $collector->save();
+            }
             return $payment;
         });
     }
@@ -69,8 +73,7 @@ class ProcessPaymentAction
             ->exists();
 
         if (!$pendingInstallments) {
-            // Si no hay pendientes, actualizamos el crédito padre
-            \App\Src\Credits\Models\CreditsModel::where('id', $creditId)
+            CreditsModel::where('id', $creditId)
                 ->update(['status' => 'paid']);
         }
     }

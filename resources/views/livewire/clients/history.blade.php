@@ -27,35 +27,73 @@
 
                 <div class="flex items-center space-x-5">
                     <div
-                        class="h-16 w-16 bg-indigo-50 rounded-full flex items-center justify-center border border-indigo-100 text-indigo-600 text-xl font-bold">
+                        class="h-16 w-16 bg-indigo-50 rounded-full flex items-center justify-center border border-indigo-100 text-indigo-600 text-xl font-bold flex-shrink-0">
                         {{ substr($client->first_name, 0, 1) }}{{ substr($client->last_name, 0, 1) }}
                     </div>
+
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900 leading-tight">
                             {{ $client->full_name }}
                         </h2>
-                        <div class="flex items-center text-sm text-gray-500 mt-1 space-x-3">
-                            <span class="flex items-center">
-                                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .883-.393 1.627-1.08 1.998">
-                                    </path>
-                                </svg>
-                                {{ $client->dni }}
-                            </span>
-                            <span class="text-gray-300">|</span>
-                            <span class="flex items-center">
-                                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
+
+                        <p class="text-xs text-indigo-600 font-bold uppercase tracking-wide mb-2">
+                            {{ $client->rubro ?? 'Sin Rubro' }}
+                        </p>
+
+                        <div class="flex flex-col text-sm text-gray-500 space-y-1">
+
+                            <div class="flex items-center space-x-3">
+                                <span class="flex items-center" title="DNI / CUIT">
+                                    <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .883-.393 1.627-1.08 1.998">
+                                        </path>
+                                    </svg>
+                                    {{ $client->dni }}
+                                </span>
+
+                                <span class="text-gray-300">|</span>
+
+                                <span class="flex items-center" title="Teléfonos">
+                                    <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                        </path>
+                                    </svg>
+                                    {{ $client->phone ?? '-' }}
+                                    @if ($client->reference_phone)
+                                        <span class="text-gray-400 text-xs ml-2">(Ref:
+                                            {{ $client->reference_phone }})</span>
+                                    @endif
+                                </span>
+                            </div>
+
+                            <div class="flex items-center" title="Domicilio de Cobro">
+                                <svg class="w-4 h-4 mr-1 text-gray-400 flex-shrink-0" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
                                     </path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
-                                {{ $client->address }}
-                            </span>
+                                <span>{{ $client->address }}</span>
+                            </div>
+
+                            @if ($client->second_address)
+                                <div class="flex items-center text-gray-400" title="Domicilio Alternativo / Laboral">
+                                    <svg class="w-4 h-4 mr-1 text-gray-300 flex-shrink-0" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                                        </path>
+                                    </svg>
+                                    <span class="text-xs">{{ $client->second_address }}</span>
+                                </div>
+                            @endif
+
                         </div>
                     </div>
                 </div>
@@ -164,7 +202,45 @@
                     <div x-show="open" x-collapse class="bg-gray-50 border-t border-gray-200">
                         <div class="p-4">
 
-                            <div class="flex justify-end mb-4">
+                            <div class="flex justify-end mb-4 space-x-3">
+
+                                @if ($credit->status->value === 'active' && $credit->installments->where('status', '!=', 'paid')->count() > 0)
+                                    <button
+                                        wire:click="$dispatch('openRefinanceModal', { creditId: {{ $credit->id }} })"
+                                        class="inline-flex items-center px-3 py-2 bg-orange-100 text-orange-700 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-orange-200 transition">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                            </path>
+                                        </svg>
+                                        Refinanciar Saldo
+                                    </button>
+                                @endif
+
+                                <a href="{{ route('contract.new', $credit->id) }}" target="_blank"
+                                    class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                        </path>
+                                    </svg>
+                                    Contrato / Pagaré
+                                </a>
+
+                                @if ($credit->is_refinanced)
+                                    <a href="{{ route('contract.refinance', $credit->id) }}" target="_blank"
+                                        class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        Constancia Refin.
+                                    </a>
+                                @endif
+
                                 <a href="{{ route('report.credit', $credit->id) }}" target="_blank"
                                     class="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
                                     <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor"
@@ -271,5 +347,5 @@
     </div>
 
     @livewire('payments.create-payment')
-
+    @livewire('credits.refinance-modal')
 </div>

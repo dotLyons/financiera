@@ -4,8 +4,7 @@
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h2 class="text-2xl font-bold text-gray-800 tracking-tight">Nuevo Cliente</h2>
-                <p class="text-sm text-gray-500 mt-1">Complete la ficha para dar de alta un nuevo deudor en el sistema.
-                </p>
+                <p class="text-sm text-gray-500 mt-1">Complete la ficha para dar de alta un nuevo deudor en el sistema.</p>
             </div>
         </div>
 
@@ -18,26 +17,34 @@
                         <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Información Personal</h3>
                         <div class="grid grid-cols-12 gap-6">
 
-                            <div class="col-span-4">
+                            <div class="col-span-12 sm:col-span-6">
                                 <x-label for="first_name" value="Nombre" />
                                 <x-input id="first_name" type="text" class="mt-1 block w-full"
                                     wire:model="first_name" autofocus />
                                 <x-input-error for="first_name" class="mt-2" />
                             </div>
 
-                            <div class="col-span-4">
+                            <div class="col-span-12 sm:col-span-6">
                                 <x-label for="last_name" value="Apellido" />
                                 <x-input id="last_name" type="text" class="mt-1 block w-full"
                                     wire:model="last_name" />
                                 <x-input-error for="last_name" class="mt-2" />
                             </div>
 
-                            <div class="col-span-4">
+                            <div class="col-span-12 sm:col-span-6">
                                 <x-label for="dni" value="CUIT / DNI" />
                                 <x-input id="dni" type="text" class="mt-1 block w-full bg-gray-50"
                                     wire:model="dni" placeholder="Sin puntos ni guiones" />
                                 <x-input-error for="dni" class="mt-2" />
                             </div>
+
+                            <div class="col-span-12 sm:col-span-6">
+                                <x-label for="rubro" value="Rubro / Ocupación" />
+                                <x-input id="rubro" type="text" class="mt-1 block w-full"
+                                    wire:model="rubro" placeholder="Ej: Comercio, Empleado Público..." />
+                                <x-input-error for="rubro" class="mt-2" />
+                            </div>
+
                         </div>
                     </div>
 
@@ -47,18 +54,32 @@
                         <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Ubicación y Contacto</h3>
                         <div class="grid grid-cols-12 gap-6">
 
-                            <div class="col-span-4">
+                            <div class="col-span-12 sm:col-span-6">
                                 <x-label for="phone" value="Teléfono / WhatsApp" />
                                 <x-input id="phone" type="text" class="mt-1 block w-full" wire:model="phone"
                                     placeholder="Ej: 385..." />
                                 <x-input-error for="phone" class="mt-2" />
                             </div>
 
-                            <div class="col-span-8">
-                                <x-label for="address" value="Dirección Completa (Domicilio de Cobro)" />
+                            <div class="col-span-12 sm:col-span-6">
+                                <x-label for="reference_phone" value="Teléfono de Referencia (Opcional)" />
+                                <x-input id="reference_phone" type="text" class="mt-1 block w-full" wire:model="reference_phone"
+                                    placeholder="Familiar, Amigo o Laboral" />
+                                <x-input-error for="reference_phone" class="mt-2" />
+                            </div>
+
+                            <div class="col-span-12">
+                                <x-label for="address" value="Dirección Principal (Domicilio de Cobro)" />
                                 <x-input id="address" type="text" class="mt-1 block w-full" wire:model="address"
                                     placeholder="Calle, Número, Barrio..." />
                                 <x-input-error for="address" class="mt-2" />
+                            </div>
+
+                            <div class="col-span-12">
+                                <x-label for="second_address" value="Dirección Laboral / Alternativa (Opcional)" />
+                                <x-input id="second_address" type="text" class="mt-1 block w-full" wire:model="second_address"
+                                    placeholder="Otra dirección donde se pueda ubicar al cliente" />
+                                <x-input-error for="second_address" class="mt-2" />
                             </div>
                         </div>
                     </div>

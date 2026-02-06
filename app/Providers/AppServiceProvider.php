@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Policies\CreditPolicy;
 use App\Src\CashOperation\Providers\CashOperationServiceProvider;
 use App\Src\Client\Providers\ClientServiceProvider;
+use App\Src\Collectors\Providers\CollectorServiceProvider;
 use App\Src\Credits\Models\CreditsModel;
 use App\Src\Credits\Providers\CreditServiceProvider;
 use App\Src\Installments\Providers\InstallmentServiceProvider;
@@ -27,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->register(InstallmentServiceProvider::class);
         $this->app->register(CashOperationServiceProvider::class);
         $this->app->register(PaymentServiceProvider::class);
+        $this->app->register(CollectorServiceProvider::class);
     }
 
     /**

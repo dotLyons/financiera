@@ -32,6 +32,10 @@
                         <x-nav-link href="{{ route('collectors.index') }}" :active="request()->routeIs('collectors.index')">
                             {{ __('Cobradores') }}
                         </x-nav-link>
+
+                        <x-nav-link href="{{ route('reports.index') }}" :active="request()->routeIs('reports.index')">
+                            {{ __('Reportes Mensuales') }}
+                        </x-nav-link>
                     @elseif (auth()->user()->role === 'collector')
                         <x-nav-link href="{{ route('collector.dashboard') }}" :active="request()->routeIs('collector.dashboard')">
                             {{ __('Hoja de Ruta') }}
@@ -195,6 +199,10 @@
 
                 <x-responsive-nav-link href="{{ route('collectors.index') }}" :active="request()->routeIs('collectors.index')">
                     {{ __('Cobradores') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link href="{{ route('reports.index') }}" :active="request()->routeIs('reports.index')">
+                    {{ __('Reportes Mensuales') }}
                 </x-responsive-nav-link>
             @elseif (auth()->user()->role === 'collector')
                 <x-responsive-nav-link href="{{ route('collector.dashboard') }}" :active="request()->routeIs('collector.dashboard')">

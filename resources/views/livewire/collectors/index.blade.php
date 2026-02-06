@@ -65,20 +65,60 @@
                                     </div>
                                 </div>
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
                                 {{ $collector->created_at->format('d/m/Y') }}
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap text-center">
-                                <span
-                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    Activo
-                                </span>
+                                @if ($collector->is_active)
+                                    <span
+                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Activo
+                                    </span>
+                                @else
+                                    <span
+                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Inactivo
+                                    </span>
+                                @endif
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="{{ route('collectors.edit', $collector) }}"
-                                    class="text-indigo-600 hover:text-indigo-900 font-semibold">
-                                    Editar
-                                </a>
+                                <div class="flex justify-end items-center space-x-3">
+
+                                    {{-- Botón Legajo --}}
+                                    <a href="{{ route('collectors.history', $collector->id) }}"
+                                        class="text-gray-500 hover:text-indigo-600 flex items-center transition group"
+                                        title="Ver Legajo Diario">
+                                        Legajo
+                                    </a>
+
+                                    <span class="text-gray-300">|</span>
+
+                                    {{-- Botón Editar --}}
+                                    <a href="{{ route('collectors.edit', $collector) }}"
+                                        class="text-indigo-600 hover:text-indigo-900 flex items-center font-semibold">
+                                        Editar
+                                    </a>
+
+                                    <span class="text-gray-300">|</span>
+
+                                    {{-- Botón Migrar (CORREGIDO PARA TABLA) --}}
+                                    {{-- CAMBIO 1: Usamos $collector->id en lugar de $user->id --}}
+                                    {{-- CAMBIO 2: Estilos simplificados para que entre en la tabla --}}
+                                    <button
+                                        wire:click="$dispatch('openReassignModal', { collectorId: {{ $collector->id }} })"
+                                        class="text-orange-600 hover:text-orange-900 flex items-center font-semibold transition cursor-pointer"
+                                        title="Transferir cartera a otro cobrador">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                        </svg>
+                                        Migrar
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -96,4 +136,7 @@
             {{ $collectors->links() }}
         </div>
     </div>
+
+    {{-- MODAL FUERA DE LA TABLA --}}
+    @livewire('collectors.reassign-modal')
 </div>

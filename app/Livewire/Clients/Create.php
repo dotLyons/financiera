@@ -12,8 +12,11 @@ class Create extends Component
     public $last_name = '';
     public $first_name = '';
     public $dni = '';
+    public $rubro = '';
     public $phone = '';
+    public $reference_phone = '';
     public $address = '';
+    public $second_address = '';
     public $notes = '';
 
     protected $rules = [
@@ -21,8 +24,11 @@ class Create extends Component
         'first_name' => 'required|string|max:255',
         // 'unique:table,column' -> validamos que el CUIT no exista ya
         'dni' => 'required|string|max:20|unique:clients,dni',
+        'rubro' => 'required|string|max:255',
         'phone' => 'nullable|string|max:50',
+        'reference_phone' => 'nullable|string|max:50',
         'address' => 'required|string|max:255',
+        'second_address' => 'nullable|string|max:255',
         'notes' => 'nullable|string|max:1000',
     ];
 
