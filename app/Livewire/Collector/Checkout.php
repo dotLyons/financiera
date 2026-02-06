@@ -4,7 +4,7 @@ namespace App\Livewire\Collector;
 
 use App\Src\Installments\Models\InstallmentModel;
 use App\Src\Payments\Actions\ProcessPaymentAction;
-use App\Src\Payments\DataTransferObjects\CreatePaymentData;
+use App\Src\Payments\DTOs\CreatePaymentData;
 use App\Src\Payments\Enums\PaymentMethodsEnum;
 use Livewire\Component;
 

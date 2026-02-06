@@ -36,7 +36,7 @@ class ProcessPaymentAction
             // Lógica de Estado: ¿Pagó todo o falta?
             if ($installment->amount_paid >= ($installment->amount - 0.1)) {
                 $installment->status = InstallmentStatusEnum::PAID;
-                $installment->date_paid = now();
+                //$installment->date_paid = now();
             } else {
                 $installment->status = InstallmentStatusEnum::PARTIAL;
             }

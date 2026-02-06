@@ -8,6 +8,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/hora', function () {
+    return [
+        'hora_servidor' => now()->format('Y-m-d H:i:s'),
+        'zona_horaria' => config('app.timezone'),
+        'diferencia_con_tu_reloj' => 'Debería ser la misma hora que tienes ahora mismo en tu PC/Celular'
+    ];
+});
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
@@ -29,7 +37,7 @@ Route::middleware([
     // =========================================================================
     // Todo lo que esté aquí adentro será inaccesible si se intenta entrar
     // fuera del horario permitido definido en App\Http\Middleware\CheckSystemHours
-    //Route::middleware(['hours'])->group(function () {
+    Route::middleware(['hours'])->group(function () {
         // 🚦 CONTROLADOR DE TRÁFICO (Redirección inteligente)
         Route::get('/dashboard', function () {
             $user = auth()->user();
@@ -85,6 +93,6 @@ Route::middleware([
             Route::get('/collector/checkout/{installment}', \App\Livewire\Collector\Checkout::class)->name('collector.checkout');
             Route::get('/collector/my-cash', \App\Livewire\Collector\MyCash::class)->name('collector.my-cash');
         });
-    //}); // Fin del grupo 'hours'
+    }); // Fin del grupo 'hours'
 
 });

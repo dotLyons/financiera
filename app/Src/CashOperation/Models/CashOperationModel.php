@@ -17,6 +17,7 @@ class CashOperationModel extends Model
         'type',
         'concept',
         'payment_id',
+        'operation_date',
     ];
 
     protected function casts(): array
