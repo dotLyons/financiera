@@ -116,7 +116,26 @@
                                     {{ number_format($credit->amount_total, 2) }}</div>
                                 <div class="text-xs text-gray-500">
                                     {{ $credit->installments_count }} cuotas de
-                                    {{ $credit->payment_frequency->label() }}
+                                    @switch($credit->payment_frequency)
+                                        @case('daily')
+                                            Diario
+                                        @break
+
+                                        @case('weekly')
+                                            Semanal
+                                        @break
+
+                                        @case('biweekly')
+                                            Quincenal
+                                        @break
+
+                                        @case('monthly')
+                                            Mensual
+                                        @break
+
+                                        @default
+                                            {{ $credit->payment_frequency }}
+                                    @endswitch
                                 </div>
                             </td>
 
@@ -157,27 +176,27 @@
                                 </a>
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                                <div class="flex flex-col items-center">
-                                    <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                                        </path>
-                                    </svg>
-                                    <span>No se encontraron créditos con esos filtros.</span>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                    <div class="flex flex-col items-center">
+                                        <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                                            </path>
+                                        </svg>
+                                        <span>No se encontraron créditos con esos filtros.</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="mt-4">
-            {{ $credits->links() }}
+            <div class="mt-4">
+                {{ $credits->links() }}
+            </div>
         </div>
     </div>
-</div>

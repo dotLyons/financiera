@@ -38,7 +38,8 @@
                                         <option value="">Seleccione un cliente...</option>
                                         @foreach ($clients as $client)
                                             <option value="{{ $client->id }}">{{ $client->full_name }}
-                                                ({{ $client->dni }})</option>
+                                                ({{ $client->dni }})
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -46,7 +47,7 @@
                             </div>
 
                             <div>
-                                <x-label for="collector_id" value="Cobrador Responsable" />
+                                <x-label for="collector_id" value="Cobrador Responsable (Actual)" />
                                 <div class="relative mt-1">
                                     <select id="collector_id" wire:model="collector_id"
                                         class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
@@ -109,25 +110,77 @@
                                 <x-input-error for="start_date" class="mt-2" />
                             </div>
                         </div>
-                    </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <x-label for="installments_count" value="Cantidad de Cuotas" />
-                            <x-input id="installments_count" type="number" class="mt-1 block w-full"
-                                wire:model.live="installments_count" />
-                            <x-input-error for="installments_count" class="mt-2" />
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div>
+                                <x-label for="installments_count" value="Cantidad de Cuotas" />
+                                <x-input id="installments_count" type="number" class="mt-1 block w-full"
+                                    wire:model.live="installments_count" />
+                                <x-input-error for="installments_count" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-label for="payment_frequency" value="Frecuencia de Pago" />
+                                <select id="payment_frequency" wire:model="payment_frequency"
+                                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm sm:text-sm">
+                                    @foreach ($frequencies as $freq)
+                                        <option value="{{ $freq->value }}">{{ $freq->label() }}</option>
+                                    @endforeach
+                                </select>
+                                <x-input-error for="payment_frequency" class="mt-2" />
+                            </div>
                         </div>
 
-                        <div>
-                            <x-label for="payment_frequency" value="Frecuencia de Pago" />
-                            <select id="payment_frequency" wire:model="payment_frequency"
-                                class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm sm:text-sm">
-                                @foreach ($frequencies as $freq)
-                                    <option value="{{ $freq->value }}">{{ $freq->label() }}</option>
-                                @endforeach
-                            </select>
-                            <x-input-error for="payment_frequency" class="mt-2" />
+                        <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <h4
+                                class="text-sm font-semibold text-yellow-800 uppercase tracking-wider mb-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Opciones de Migración / Crédito Preexistente
+                            </h4>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        ¿Desde qué cuota se empieza a cobrar?
+                                    </label>
+                                    <div class="mt-1 flex rounded-md shadow-sm">
+                                        <span
+                                            class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                            #
+                                        </span>
+                                        <input type="number" wire:model.live="start_installment" min="1"
+                                            max="{{ $installments_count }}"
+                                            class="focus:ring-yellow-500 focus:border-yellow-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300">
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        Dejar en <b>1</b> para créditos nuevos. Si pones <b>6</b>, las primeras 5 se
+                                        marcarán como pagadas.
+                                    </p>
+                                    <x-input-error for="start_installment" class="mt-2" />
+                                </div>
+
+                                @if ($start_installment > 1)
+                                    <div>
+                                        <label class="block text-sm font-medium text-yellow-800">
+                                            ¿Quién cobró las cuotas anteriores?
+                                        </label>
+                                        <select wire:model="historical_collector_id"
+                                            class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm">
+                                            <option value="">-- Seleccionar Cobrador --</option>
+                                            @foreach ($collectors as $c)
+                                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <p class="mt-1 text-xs text-yellow-600">
+                                            * Solo para historial. No afectará la caja actual.
+                                        </p>
+                                        <x-input-error for="historical_collector_id" class="mt-2" />
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
 

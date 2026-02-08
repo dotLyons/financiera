@@ -78,7 +78,30 @@
         <div><span class="label">Nuevo Saldo a Financiar:</span> $ {{ number_format($newTotal, 2) }}</div>
         <div><span class="label">Cantidad de Cuotas:</span>
             {{ $credit->installments->where('status', '!=', 'paid')->count() }} (Nuevas)</div>
-        <div><span class="label">Frecuencia:</span> {{ strtoupper($credit->payment_frequency->value) }}</div>
+
+        <div>
+            <span class="label">Frecuencia:</span>
+            @switch($credit->payment_frequency->value)
+                @case('daily')
+                    DIARIO
+                @break
+
+                @case('weekly')
+                    SEMANAL
+                @break
+
+                @case('biweekly')
+                    QUINCENAL
+                @break
+
+                @case('monthly')
+                    MENSUAL
+                @break
+
+                @default
+                    {{ strtoupper($credit->payment_frequency->value) }}
+            @endswitch
+        </div>
         <div><span class="label">Valor Nueva Cuota:</span>
             @php
                 $pendingCount = $credit->installments->where('status', '!=', 'paid')->count();

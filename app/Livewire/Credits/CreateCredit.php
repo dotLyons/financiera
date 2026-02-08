@@ -16,10 +16,14 @@ class CreateCredit extends Component
     public $client_id = '';
     public $collector_id = '';
     public $amount_net = '';
-    public $interest_rate = 20; // Default usual
-    public $installments_count = 10; // Default usual
-    public $payment_frequency = 'daily'; // Default
+    public $interest_rate = 20;
+    public $installments_count = 10;
+    public $payment_frequency = 'daily';
     public $start_date;
+
+    // --- NUEVAS PROPIEDADES PARA MIGRACIÓN ---
+    public $start_installment = 1; // Por defecto inicia en la 1
+    public $historical_collector_id = ''; // Opcional, solo si start > 1
 
     public function mount()
     {
@@ -51,17 +55,27 @@ class CreateCredit extends Component
             'installments_count' => 'required|integer|min:1',
             'payment_frequency' => ['required', Rule::enum(PaymentFrequencyEnum::class)],
             'start_date' => 'required|date',
+
+            // Validaciones Nuevas
+            'start_installment' => 'required|integer|min:1|lte:installments_count',
+            'historical_collector_id' => [
+                'nullable',
+                // Obligatorio si empieza después de la cuota 1
+                Rule::requiredIf(fn() => $this->start_installment > 1),
+                'exists:users,id'
+            ],
         ]);
 
-        // 2. Ejecutar la Acción (Usando el DTO)
+        // 2. Ejecutar la Acción
+        // Pasamos los datos validados al DTO
         $dto = DTOsCreateCreditData::fromArray($validated);
 
         $createCreditAction->execute($dto);
 
         // 3. Feedback y Reset
-        session()->flash('flash.banner', 'Crédito creado y cuotas generadas correctamente.');
+        session()->flash('flash.banner', 'Crédito creado correctamente.');
         session()->flash('flash.bannerStyle', 'success');
 
-        return redirect()->route('dashboard'); // O a la lista de créditos
+        return redirect()->route('dashboard');
     }
 }

@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('credits:apply-penalties')->dailyAt('00:00');
 Schedule::command('collectors:daily-close')->dailyAt('23:55');
+Schedule::command('metrics:update')->dailyAt('23:55')->timezone('America/Argentina/Buenos_Aires');

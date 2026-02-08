@@ -101,18 +101,52 @@
     </p>
 
     <div class="box">
-        <div class="row"><span class="label">Monto Solicitado (Neto):</span> <span class="value">$
-                {{ number_format($credit->amount_net, 2) }}</span></div>
-        <div class="row"><span class="label">Total a Devolver:</span> <span class="value">$
-                {{ number_format($credit->amount_total, 2) }}</span></div>
-        <div class="row"><span class="label">Plan de Pagos:</span> <span
-                class="value">{{ $credit->installments_count }} Cuotas</span></div>
-        <div class="row"><span class="label">Frecuencia:</span> <span
-                class="value">{{ strtoupper($credit->payment_frequency->value) }}</span></div>
-        <div class="row"><span class="label">Valor por Cuota:</span> <span class="value">$
-                {{ number_format($credit->amount_total / $credit->installments_count, 2) }}</span></div>
-        <div class="row"><span class="label">Primer Vencimiento:</span> <span
-                class="value">{{ $credit->installments->first()->due_date->format('d/m/Y') }}</span></div>
+        <div class="row">
+            <span class="label">Monto Solicitado (Neto):</span>
+            <span class="value">$ {{ number_format($credit->amount_net, 2) }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Total a Devolver:</span>
+            <span class="value">$ {{ number_format($credit->amount_total, 2) }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Plan de Pagos:</span>
+            <span class="value">{{ $credit->installments_count }} Cuotas</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Frecuencia:</span>
+            <span class="value">
+                @switch($credit->payment_frequency->value)
+                    @case('daily')
+                        DIARIO
+                    @break
+
+                    @case('weekly')
+                        SEMANAL
+                    @break
+
+                    @case('biweekly')
+                        QUINCENAL
+                    @break
+
+                    @case('monthly')
+                        MENSUAL
+                    @break
+
+                    @default
+                        {{ strtoupper($credit->payment_frequency->value) }}
+                @endswitch
+            </span>
+        </div>
+        <div class="row">
+            <span class="label">Valor por Cuota:</span>
+            <span class="value">$ {{ number_format($credit->amount_total / $credit->installments_count, 2) }}</span>
+        </div>
+        <div class="row">
+            <span class="label">Primer Vencimiento:</span>
+            <span class="value">{{ $credit->installments->first()->due_date->format('d/m/Y') }}</span>
+        </div>
     </div>
 
     <div class="warning-box">
