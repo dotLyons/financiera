@@ -9,6 +9,30 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
+Route::get('/manifest.json', function () {
+    $path = public_path('manifest.json');
+
+    if (!file_exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($path, [
+        'Content-Type' => 'application/manifest+json',
+    ]);
+});
+
+Route::get('/sw.js', function () {
+    $path = public_path('sw.js');
+
+    if (!file_exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($path, [
+        'Content-Type' => 'application/javascript',
+    ]);
+});
+
 Route::get('/hora', function () {
     return [
         'hora_servidor' => now()->format('Y-m-d H:i:s'),
