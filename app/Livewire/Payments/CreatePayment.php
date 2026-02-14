@@ -2,72 +2,129 @@
 
 namespace App\Livewire\Payments;
 
+use App\Models\User;
 use App\Src\Installments\Models\InstallmentModel;
 use App\Src\Payments\Actions\ProcessPaymentAction;
 use App\Src\Payments\DTOs\CreatePaymentData;
+use App\Src\Payments\Enums\PaymentMethodEnum;
 use App\Src\Payments\Enums\PaymentMethodsEnum;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class CreatePayment extends Component
 {
     public $isOpen = false;
-    public ?InstallmentModel $installment = null;
+    public InstallmentModel $installment;
 
-    // Formulario
     public $amount;
-    public $payment_method = 'cash';
+    public $method = 'cash';
+
+    public $isMixed = false;
+    public $secondAmount;
+    public $secondMethod = 'transfer';
 
     protected $listeners = ['openPaymentModal'];
 
-    // Validaciones
-    protected function rules()
-    {
-        return [
-            'amount' => 'required|numeric|min:1', // ¿Permitimos sobrepagos? Por ahora no validamos max
-            'payment_method' => 'required',
-        ];
-    }
-
     public function openPaymentModal($installmentId)
     {
-        $this->installment = InstallmentModel::find($installmentId);
+        $this->installment = InstallmentModel::with('credit.client')->findOrFail($installmentId);
 
-        // Sugerimos pagar el saldo restante
-        $saldo = $this->installment->amount - $this->installment->amount_paid;
-        $this->amount = number_format($saldo, 2, '.', ''); 
+        $remaining = $this->installment->amount - $this->installment->amount_paid;
+        $this->amount = $remaining;
 
+        $this->reset(['isMixed', 'secondAmount', 'secondMethod']);
         $this->isOpen = true;
     }
 
-    public function closeModal()
+    public function getCalculatedBalanceProperty()
+    {
+        $originalDebt = $this->installment->amount - $this->installment->amount_paid;
+
+        $proposedPayment = (float) $this->amount;
+
+        if ($this->isMixed) {
+            $proposedPayment += (float) $this->secondAmount;
+        }
+
+        return $originalDebt - $proposedPayment;
+    }
+
+    public function close()
     {
         $this->isOpen = false;
-        $this->reset(['installment', 'amount']);
+        $this->resetValidation();
     }
 
     public function save(ProcessPaymentAction $action)
     {
-        $this->validate();
+        $rules = [
+            'amount' => 'required|numeric|min:1',
+            'method' => 'required|in:cash,transfer,debit_card,credit_card,mercadopago',
+        ];
 
-        $dto = CreatePaymentData::fromArray([
-            'installment_id' => $this->installment->id,
-            'amount' => $this->amount,
-            'payment_method' => $this->payment_method,
-        ]);
+        if ($this->isMixed) {
+            $rules['secondAmount'] = 'required|numeric|min:1';
+            $rules['secondMethod'] = 'required|in:cash,transfer,debit_card,credit_card,mercadopago|different:method';
+        }
 
-        $action->execute($dto);
+        $this->validate($rules);
 
-        // Feedback y Cierre
-        $this->closeModal();
-        $this->dispatch('paymentProcessed');
+        $pendingBalance = round($this->installment->amount - $this->installment->amount_paid, 2);
 
-        session()->flash('flash.banner', 'Pago registrado exitosamente.');
+        $totalProposedPayment = (float) $this->amount;
+
+        if ($this->isMixed) {
+            $totalProposedPayment += (float) $this->secondAmount;
+        }
+
+        if ($totalProposedPayment > ($pendingBalance + 0.01)) {
+            $this->addError('amount', 'El pago total ($' . number_format($totalProposedPayment, 2) . ') supera el saldo pendiente de la cuota ($' . number_format($pendingBalance, 2) . ').');
+            return;
+        }
+
+        $dto1 = new CreatePaymentData(
+            installmentId: $this->installment->id,
+            userId: auth()->id(),
+            amount: $this->amount,
+            method: PaymentMethodsEnum::from($this->method),
+            paymentDate: now(),
+            proofOfPayment: 'Cobro Admin'
+        );
+
+        $payment1 = $action->execute($dto1);
+        $lastPaymentId = $payment1->id;
+
+        if ($this->isMixed && $this->secondAmount > 0) {
+            $dto2 = new CreatePaymentData(
+                installmentId: $this->installment->id,
+                userId: auth()->id(),
+                amount: $this->secondAmount,
+                method: PaymentMethodsEnum::from($this->secondMethod),
+                paymentDate: now(),
+                proofOfPayment: 'Cobro Admin (Mixto)'
+            );
+            $payment2 = $action->execute($dto2);
+            $lastPaymentId = $payment2->id;
+        }
+
+        $this->isOpen = false;
+        $this->dispatch('payment-processed');
+
+        $this->dispatch('open-pdf', url: route('receipt.print', $lastPaymentId));
+
+        return redirect()->back();
     }
 
     public function render()
     {
         return view('livewire.payments.create-payment', [
-            'methods' => PaymentMethodsEnum::cases()
-        ]);
+            'paymentMethods' => [
+                'cash' => 'Efectivo',
+                'transfer' => 'Transferencia',
+                //'debit_card' => 'Tarjeta Débito',
+                //'credit_card' => 'Tarjeta Crédito',
+                //'mercadopago' => 'Mercado Pago',
+            ]
+        ])->layout('layouts.app');
     }
 }

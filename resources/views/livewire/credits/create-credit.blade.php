@@ -104,6 +104,14 @@
                             </div>
 
                             <div>
+                                <x-label for="date_of_award" value="Fecha de Otorgamiento" />
+                                <x-input id="date_of_award" type="date" class="mt-1 block w-full"
+                                    wire:model="date_of_award" />
+                                <p class="mt-1 text-xs text-gray-500">Fecha real de entrega del dinero.</p>
+                                <x-input-error for="date_of_award" class="mt-2" />
+                            </div>
+
+                            <div>
                                 <x-label for="start_date" value="Fecha Primer Pago" />
                                 <x-input id="start_date" type="date" class="mt-1 block w-full"
                                     wire:model="start_date" />

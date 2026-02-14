@@ -8,7 +8,7 @@ use Livewire\Component;
 class History extends Component
 {
     public ClientModel $client;
-    protected $listeners = ['paymentProcessed' => '$refresh'];
+    protected $listeners = ['payment-processedlaravelpwa' => '$refresh'];
 
     public function mount(ClientModel $client)
     {

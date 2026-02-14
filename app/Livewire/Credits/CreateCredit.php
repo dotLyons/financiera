@@ -20,6 +20,7 @@ class CreateCredit extends Component
     public $installments_count = 10;
     public $payment_frequency = 'daily';
     public $start_date;
+    public $date_of_award;
 
     // --- NUEVAS PROPIEDADES PARA MIGRACIÓN ---
     public $start_installment = 1; // Por defecto inicia en la 1
@@ -29,6 +30,7 @@ class CreateCredit extends Component
     {
         // Seteamos la fecha de inicio a HOY por defecto
         $this->start_date = now()->format('Y-m-d');
+        $this->date_of_award = now()->format('Y-m-d');
 
         // Verificamos autorización al cargar
         $this->authorize('create', \App\Src\Credits\Models\CreditsModel::class);
@@ -55,6 +57,7 @@ class CreateCredit extends Component
             'installments_count' => 'required|integer|min:1',
             'payment_frequency' => ['required', Rule::enum(PaymentFrequencyEnum::class)],
             'start_date' => 'required|date',
+            'date_of_award' => 'required|date',
 
             // Validaciones Nuevas
             'start_installment' => 'required|integer|min:1|lte:installments_count',

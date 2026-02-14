@@ -7,18 +7,23 @@ use App\Src\Credits\Enums\PaymentFrequencyEnum;
 use App\Src\Credits\Models\CreditsModel;
 use App\Src\Installments\Enums\InstallmentStatusEnum;
 use App\Src\Installments\Models\InstallmentModel;
-use App\Src\Payments\Models\PaymentsModel;
 use Illuminate\Support\Facades\DB;
+use ValidationException;
 
-class CreateCreditAction
+class UpdateCreditAction
 {
-    public function execute(CreateCreditData $data)
+    public function execute(CreditsModel $credit, CreateCreditData $data, string $reason)
     {
-        $totalAmount = $data->amountNet * (1 + $data->interestRate / 100);
+        $hasPayments = $credit->installments()->where('status', InstallmentStatusEnum::PAID)->exists();
 
-        return DB::transaction(function () use ($data, $totalAmount) {
+        if ($hasPayments) {
+            throw new \Exception('No se puede editar un crédito que ya tiene cuotas pagadas. Utilice la Refinanciación.');
+        }
 
-            $credit = CreditsModel::create([
+        return DB::transaction(function () use ($credit, $data, $reason) {
+            $totalAmount = $data->amountNet * (1 + $data->interestRate / 100);
+
+            $credit->update([
                 'client_id' => $data->clientId,
                 'collector_id' => $data->collectorId,
                 'amount_net' => $data->amountNet,
@@ -28,8 +33,13 @@ class CreateCreditAction
                 'payment_frequency' => $data->paymentFrequency,
                 'start_date' => $data->startDate,
                 'date_of_award' => $data->dateOfAward,
-                'status' => 'active',
+
+                'is_edited' => true,
+                'edited_at' => now(),
+                'edited_reason' => $reason,
             ]);
+
+            $credit->installments()->delete();
 
             $this->generateInstallments($credit, $data, $totalAmount);
 
@@ -40,7 +50,6 @@ class CreateCreditAction
     private function generateInstallments(CreditsModel $credit, CreateCreditData $data, float $totalAmount): void
     {
         $installmentAmount = $totalAmount / $data->installmentsCount;
-
         $currentDate = $data->startDate->copy();
 
         for ($i = 1; $i <= $data->installmentsCount; $i++) {
@@ -53,7 +62,6 @@ class CreateCreditAction
                         PaymentFrequencyEnum::MONTHLY => $currentDate->addMonth(),
                         default => $currentDate->addDay(),
                     };
-
                     if ($currentDate->isWeekend()) {
                         $currentDate->nextWeekday();
                     }
@@ -64,27 +72,14 @@ class CreateCreditAction
                 }
             }
 
-            $isHistorical = $i < $data->startInstallment;
-
-            $installment = InstallmentModel::create([
+            InstallmentModel::create([
                 'credit_id' => $credit->id,
                 'installment_number' => $i,
                 'amount' => $installmentAmount,
-                'amount_paid' => $isHistorical ? $installmentAmount : 0,
+                'amount_paid' => 0,
                 'due_date' => $currentDate->copy(),
-                'status' => $isHistorical ? InstallmentStatusEnum::PAID : InstallmentStatusEnum::PENDING,
+                'status' => InstallmentStatusEnum::PENDING,
             ]);
-
-            if ($isHistorical) {
-                PaymentsModel::create([
-                    'installment_id' => $installment->id,
-                    'user_id' => $data->historicalCollectorId,
-                    'amount' => $installmentAmount,
-                    'payment_method' => 'cash',
-                    'payment_date' => $currentDate->copy(),
-                    'proof_of_payment' => 'MIGRACION_SISTEMA',
-                ]);
-            }
         }
     }
 }

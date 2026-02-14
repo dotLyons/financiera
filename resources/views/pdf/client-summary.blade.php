@@ -91,11 +91,15 @@
                 <td width="50%">
                     <span class="label">Cliente:</span> <span class="value">{{ $client->last_name }},
                         {{ $client->first_name }}</span><br>
-                    <span class="label">DNI:</span> <span class="value">{{ $client->dni }}</span>
+                    <span class="label">DNI:</span> <span class="value">{{ $client->dni }}</span><br>
+                    <span class="label">Rubro</span> <span class="value">{{ $client->rubro }}</span><br>
+                    <span class="label">Actividad</span> <span class="value">{{ $client->status ? 'Activo' : 'Inactivo' }}</span>
                 </td>
                 <td width="50%">
                     <span class="label">Dirección:</span> <span class="value">{{ $client->address }}</span><br>
-                    <span class="label">Teléfono:</span> <span class="value">{{ $client->phone ?? '-' }}</span>
+                    <span class="label">Direccion Alternativa</span> <span class="value">{{ $client->second_address ?? '-' }}</span><br>
+                    <span class="label">Teléfono:</span> <span class="value">{{ $client->phone ?? '-' }}</span><br>
+                    <span class="label">Telefono de Referencia:</span> <span class="value">{{ $client->reference_phone ?? '-' }}</span>
                 </td>
             </tr>
         </table>

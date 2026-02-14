@@ -25,7 +25,11 @@ class CreditsModel extends Model
         'installments_count',
         'payment_frequency',
         'start_date',
+        'date_of_award',
         'status',
+        'is_edited',
+        'edited_at',
+        'edited_reason',
     ];
 
     // Relación con el Cliente
@@ -49,11 +53,14 @@ class CreditsModel extends Model
     {
         return [
             'start_date' => 'date',
+            'date_of_award' => 'date',
             'amount_net' => 'decimal:2',
             'amount_total' => 'decimal:2',
             'interest_rate' => 'decimal:2',
             'status' => CreditStatusEnum::class,
             'payment_frequency' => PaymentFrequencyEnum::class,
+            'is_edited' => 'boolean',
+            'edited_at' => 'datetime',
         ];
     }
 }

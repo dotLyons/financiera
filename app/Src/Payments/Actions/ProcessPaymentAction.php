@@ -17,10 +17,8 @@ class ProcessPaymentAction
     {
         return DB::transaction(function () use ($data) {
 
-            // 1. Obtener la cuota y bloquearla para evitar doble pago simultáneo
             $installment = InstallmentModel::findOrFail($data->installmentId);
 
-            // 2. Crear el Registro del Pago (El recibo)
             $payment = PaymentsModel::create([
                 'installment_id' => $data->installmentId,
                 'user_id' => $data->userId,
@@ -30,23 +28,24 @@ class ProcessPaymentAction
                 'proof_of_payment' => $data->proofOfPayment,
             ]);
 
-            // 3. Actualizar la Cuota
-            $installment->amount_paid += $data->amount;
+            $totalCuota = (float) $installment->amount;
+            $pagadoPreviamente = (float) $installment->amount_paid;
+            $pagoActual = (float) $data->amount;
 
-            // Lógica de Estado: ¿Pagó todo o falta?
-            if ($installment->amount_paid >= ($installment->amount - 0.1)) {
+            $nuevoTotalPagado = $pagadoPreviamente + $pagoActual;
+
+            if ($nuevoTotalPagado >= ($totalCuota - 0.01)) {
                 $installment->status = InstallmentStatusEnum::PAID;
-                //$installment->date_paid = now();
+                $installment->amount_paid = $totalCuota;
             } else {
                 $installment->status = InstallmentStatusEnum::PARTIAL;
+                $installment->amount_paid = $nuevoTotalPagado;
             }
 
             $installment->save();
 
-            // 4. Verificar si el Crédito Padre se completó
             $this->checkCreditStatus($installment->credit_id);
 
-            // 5. Registrar Movimiento en Caja (Cash Operation - Log Histórico)
             CashOperationModel::create([
                 'user_id' => $data->userId,
                 'payment_id' => $payment->id,
@@ -61,20 +60,20 @@ class ProcessPaymentAction
                 $collector->wallet_balance += $data->amount;
                 $collector->save();
             }
+
             return $payment;
         });
     }
 
     private function checkCreditStatus(int $creditId): void
     {
-        // Buscamos si queda alguna cuota pendiente
-        $pendingInstallments = InstallmentModel::where('credit_id', $creditId)
+        $hasPendingInstallments = InstallmentModel::where('credit_id', $creditId)
             ->where('status', '!=', InstallmentStatusEnum::PAID)
             ->exists();
 
-        if (!$pendingInstallments) {
+        if (!$hasPendingInstallments) {
             CreditsModel::where('id', $creditId)
-                ->update(['status' => 'paid']);
+                ->update(['status' => 'paid']); 
         }
     }
 }

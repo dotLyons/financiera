@@ -15,6 +15,9 @@ class CreateCreditData
         public int $installmentsCount,
         public PaymentFrequencyEnum $paymentFrequency,
         public Carbon $startDate,
+        public Carbon $dateOfAward,
+        public int $startInstallment = 1,
+        public ?int $historicalCollectorId = null,
     ) {}
 
     public static function fromArray(array $data): self
@@ -27,6 +30,13 @@ class CreateCreditData
             installmentsCount: (int) $data['installments_count'],
             paymentFrequency: PaymentFrequencyEnum::from($data['payment_frequency']),
             startDate: Carbon::parse($data['start_date']),
+            dateOfAward: isset($data['date_of_award'])
+                ? Carbon::parse($data['date_of_award'])
+                : Carbon::now(),
+            startInstallment: (int) ($data['start_installment'] ?? 1),
+            historicalCollectorId: !empty($data['historical_collector_id'])
+                ? (int) $data['historical_collector_id']
+                : null,
         );
     }
 }
