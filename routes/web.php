@@ -33,6 +33,8 @@ Route::get('/sw.js', function () {
     ]);
 });
 
+Route::get('/receipt/{payment}', [ReportController::class, 'printPaymentReceipt'])->name('receipt.print');
+
 Route::get('/hora', function () {
     return [
         'hora_servidor' => now()->format('Y-m-d H:i:s'),
@@ -96,7 +98,6 @@ Route::middleware([
             Route::get('/report/credit/{credit}', [ReportController::class, 'creditDetail'])->name('report.credit');
             Route::get('/contract/new/{credit}', [ReportController::class, 'printContract'])->name('contract.new');
             Route::get('/contract/refinance/{credit}', [ReportController::class, 'printRefinance'])->name('contract.refinance');
-            Route::get('/receipt/{payment}', [ReportController::class, 'printPaymentReceipt'])->name('receipt.print');
             Route::get('/report/daily/{user}/{date}', [ReportController::class, 'printDailyReport'])->name('report.daily');
 
             // Cobradores
@@ -118,6 +119,7 @@ Route::middleware([
             Route::get('/collector/dashboard', \App\Livewire\Collector\Dashboard::class)->name('collector.dashboard');
             Route::get('/collector/checkout/{installment}', \App\Livewire\Collector\Checkout::class)->name('collector.checkout');
             Route::get('/collector/my-cash', \App\Livewire\Collector\MyCash::class)->name('collector.my-cash');
+            Route::get('/collector/receipt/{payment}', [\App\Http\Controllers\CollectorReportController::class, 'printPaymentReceipt'])->name('collector.receipt.print');
         });
     }); // Fin del grupo 'hours'
 

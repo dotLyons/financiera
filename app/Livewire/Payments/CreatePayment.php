@@ -6,9 +6,7 @@ use App\Models\User;
 use App\Src\Installments\Models\InstallmentModel;
 use App\Src\Payments\Actions\ProcessPaymentAction;
 use App\Src\Payments\DTOs\CreatePaymentData;
-use App\Src\Payments\Enums\PaymentMethodEnum;
 use App\Src\Payments\Enums\PaymentMethodsEnum;
-use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class CreatePayment extends Component
@@ -23,6 +21,7 @@ class CreatePayment extends Component
     public $secondAmount;
     public $secondMethod = 'transfer';
 
+    // Listener para abrir el modal desde otros componentes
     protected $listeners = ['openPaymentModal'];
 
     public function openPaymentModal($installmentId)
@@ -70,7 +69,6 @@ class CreatePayment extends Component
         $this->validate($rules);
 
         $pendingBalance = round($this->installment->amount - $this->installment->amount_paid, 2);
-
         $totalProposedPayment = (float) $this->amount;
 
         if ($this->isMixed) {
@@ -88,7 +86,7 @@ class CreatePayment extends Component
             amount: $this->amount,
             method: PaymentMethodsEnum::from($this->method),
             paymentDate: now(),
-            proofOfPayment: 'Cobro Admin'
+            proofOfPayment: 'Cobro Sistema'
         );
 
         $payment1 = $action->execute($dto1);
@@ -101,18 +99,27 @@ class CreatePayment extends Component
                 amount: $this->secondAmount,
                 method: PaymentMethodsEnum::from($this->secondMethod),
                 paymentDate: now(),
-                proofOfPayment: 'Cobro Admin (Mixto)'
+                proofOfPayment: 'Cobro Sistema (Mixto)'
             );
             $payment2 = $action->execute($dto2);
             $lastPaymentId = $payment2->id;
         }
 
         $this->isOpen = false;
+
         $this->dispatch('payment-processed');
 
-        $this->dispatch('open-pdf', url: route('receipt.print', $lastPaymentId));
+        $user = auth()->user();
 
-        return redirect()->back();
+        if ($user->role === 'collector') {
+            $pdfRoute = route('collector.receipt.print', $lastPaymentId);
+        } else {
+            $pdfRoute = route('receipt.print', $lastPaymentId);
+        }
+
+        $this->dispatch('open-pdf', url: $pdfRoute);
+
+        // Nota: Ya no usamos redirect()->back() para que la UX sea instantánea
     }
 
     public function render()
@@ -121,9 +128,9 @@ class CreatePayment extends Component
             'paymentMethods' => [
                 'cash' => 'Efectivo',
                 'transfer' => 'Transferencia',
-                //'debit_card' => 'Tarjeta Débito',
-                //'credit_card' => 'Tarjeta Crédito',
-                //'mercadopago' => 'Mercado Pago',
+                // 'debit_card' => 'Tarjeta Débito',
+                // 'credit_card' => 'Tarjeta Crédito',
+                // 'mercadopago' => 'Mercado Pago',
             ]
         ])->layout('layouts.app');
     }
