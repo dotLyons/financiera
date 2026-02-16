@@ -3,11 +3,11 @@
 namespace App\Livewire\Dashboard;
 
 use App\Models\User;
-use App\Src\Client\Models\ClientModel;
+use App\Src\Client\Models\ClientModel as ModelsClientModel;
 use App\Src\Credits\Models\CreditsModel;
 use App\Src\Installments\Models\InstallmentModel;
-use App\Src\Payments\Models\PaymentsModel;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Main extends Component
@@ -18,45 +18,71 @@ class Main extends Component
         $startOfMonth = $now->copy()->startOfMonth();
         $endOfMonth = $now->copy()->endOfMonth();
 
-        // 1. KPIs Generales
-        $totalClients = ClientModel::count();
+        $totalClients = ModelsClientModel::count();
+
         $activeCredits = CreditsModel::where('status', 'active')->count();
 
-        // 2. Flujo de Caja del MES ACTUAL
-        // Dinero que salió (Prestado) este mes
-        $lentThisMonth = CreditsModel::whereBetween('start_date', [$startOfMonth, $endOfMonth])
+        $collectedMonth = DB::table('payments')
+            ->whereBetween('payment_date', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
+
+        $lentMonth = CreditsModel::whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->sum('amount_net');
 
-        // Dinero que entró (Cobrado) este mes
-        $collectedThisMonth = PaymentsModel::whereBetween('payment_date', [$startOfMonth, $endOfMonth])
+        $expectedMonth = InstallmentModel::whereBetween('due_date', [$startOfMonth, $endOfMonth])
             ->sum('amount');
 
-        // 3. Alertas de Mora (Top 5 más recientes)
-        // Cuotas vencidas, no pagadas, ordenadas por fecha de vencimiento (las más antiguas primero son más críticas)
-        $overdueInstallments = InstallmentModel::with(['credit.client', 'credit.collector'])
-            ->where('due_date', '<', $now) // Ya venció
-            ->where('status', '!=', 'paid') // No está pagada
-            ->orderBy('due_date', 'desc') // Las más recientes vencidas arriba (o asc para las más viejas)
-            ->take(5)
+        $pendingMonth = InstallmentModel::whereBetween('due_date', [$startOfMonth, $endOfMonth])
+            ->sum(DB::raw('amount - amount_paid'));
+
+        $collectionHealth = $expectedMonth > 0 ? (($expectedMonth - $pendingMonth) / $expectedMonth) * 100 : 0;
+
+
+        $totalOutstanding = InstallmentModel::where('status', '!=', 'paid')
+            ->sum(DB::raw('amount - amount_paid'));
+
+        $totalPortfolio = InstallmentModel::sum(DB::raw('amount - amount_paid'));
+        $overdueAmount = InstallmentModel::where('status', 'overdue')->sum(DB::raw('amount - amount_paid'));
+        $defaultRate = $totalPortfolio > 0 ? ($overdueAmount / $totalPortfolio) * 100 : 0;
+
+        $lateInstallments = InstallmentModel::with(['credit.client'])
+            ->where('status', 'overdue')
+            ->orWhere(function ($q) {
+                $q->where('due_date', '<', now())->where('status', '!=', 'paid');
+            })
+            ->orderBy('due_date', 'asc') // Los más antiguos primero
+            ->take(10)
             ->get();
 
-        // 4. Rendimiento de Cobranza (Para la barra de progreso)
-        // Cuánto debíamos cobrar este mes vs cuánto cobramos realmente
-        $expectedCollectionThisMonth = InstallmentModel::whereBetween('due_date', [$startOfMonth, $endOfMonth])
-            ->sum('amount');
-
-        $collectionProgress = $expectedCollectionThisMonth > 0
-            ? ($collectedThisMonth / $expectedCollectionThisMonth) * 100
-            : 0;
+        $chartData = $this->getChartData();
 
         return view('livewire.dashboard.main', [
             'totalClients' => $totalClients,
             'activeCredits' => $activeCredits,
-            'lentThisMonth' => $lentThisMonth,
-            'collectedThisMonth' => $collectedThisMonth,
-            'overdueInstallments' => $overdueInstallments,
-            'expectedCollectionThisMonth' => $expectedCollectionThisMonth,
-            'collectionProgress' => $collectionProgress,
+            'collectedMonth' => $collectedMonth,
+            'lentMonth' => $lentMonth,
+            'pendingMonth' => $pendingMonth,
+            'expectedMonth' => $expectedMonth,
+            'collectionHealth' => $collectionHealth,
+            'totalOutstanding' => $totalOutstanding,
+            'defaultRate' => $defaultRate,
+            'lateInstallments' => $lateInstallments,
+            'chartLabels' => $chartData['labels'],
+            'chartIncome' => $chartData['income'],
         ])->layout('layouts.app');
+    }
+
+    private function getChartData()
+    {
+        $labels = [];
+        $income = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i);
+            $labels[] = $date->format('d/m');
+            $income[] = DB::table('payments')->whereDate('payment_date', $date)->sum('amount');
+        }
+
+        return ['labels' => $labels, 'income' => $income];
     }
 }
