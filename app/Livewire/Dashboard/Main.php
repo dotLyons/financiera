@@ -9,9 +9,12 @@ use App\Src\Installments\Models\InstallmentModel;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class Main extends Component
 {
+    use WithPagination;
+
     public function render()
     {
         $now = Carbon::now();
@@ -50,11 +53,35 @@ class Main extends Component
             ->orWhere(function ($q) {
                 $q->where('due_date', '<', now())->where('status', '!=', 'paid');
             })
-            ->orderBy('due_date', 'asc') // Los más antiguos primero
-            ->take(10)
-            ->get();
+            ->orderBy('due_date', 'asc')
+            ->paginate(3);
 
         $chartData = $this->getChartData();
+
+        $collectorsRanking = User::where('role', 'collector')
+            ->get()
+            ->map(function ($collector) use ($startOfMonth, $endOfMonth) {
+
+                $goal = InstallmentModel::whereHas('credit', function ($q) use ($collector) {
+                    $q->where('collector_id', $collector->id);
+                })->whereBetween('due_date', [$startOfMonth, $endOfMonth])->sum('amount');
+
+                $actual = DB::table('payments')
+                    ->where('user_id', $collector->id)
+                    ->whereBetween('payment_date', [$startOfMonth, $endOfMonth])
+                    ->sum('amount');
+
+                $percentage = $goal > 0 ? ($actual / $goal) * 100 : 0;
+
+                return (object) [
+                    'name' => $collector->name,
+                    'email' => $collector->email,
+                    'goal' => $goal,
+                    'actual' => $actual,
+                    'percentage' => $percentage
+                ];
+            })
+            ->sortByDesc('percentage');
 
         return view('livewire.dashboard.main', [
             'totalClients' => $totalClients,
@@ -69,6 +96,7 @@ class Main extends Component
             'lateInstallments' => $lateInstallments,
             'chartLabels' => $chartData['labels'],
             'chartIncome' => $chartData['income'],
+            'collectorsRanking' => $collectorsRanking,
         ])->layout('layouts.app');
     }
 
