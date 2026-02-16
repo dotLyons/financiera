@@ -3,23 +3,21 @@
 namespace App\Src\Credits\Actions;
 
 use App\Src\Credits\Models\CreditsModel;
-use Illuminate\Support\Facades\DB;
 
 class ReassignPortfolioAction
 {
-    /**
-     * Mueve la cartera activa de un cobrador a otro.
-     */
-    public function execute(int $fromCollectorId, int $toCollectorId): int
+    public function execute(int $fromCollectorId, int $toCollectorId, ?array $creditIds = null): int
     {
-        $count = CreditsModel::where('collector_id', $fromCollectorId)
-            ->whereIn('status', ['active', 'refinanced'])
-            ->update([
-                'collector_id' => $toCollectorId
-            ]);
+        $query = CreditsModel::where('collector_id', $fromCollectorId);
 
-        // Log::info("Se transfirieron $count créditos del ID $fromCollectorId al ID $toCollectorId"); Futura implementacion
+        if (!empty($creditIds)) {
+            $query->whereIn('id', $creditIds);
+        } else {
+            $query->whereIn('status', ['active', 'refinanced']);
+        }
 
-        return $count;
+        return $query->update([
+            'collector_id' => $toCollectorId
+        ]);
     }
 }

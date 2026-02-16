@@ -14,29 +14,64 @@
 
                             @if ($sourceCollector)
                                 <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                                    <div class="flex">
-                                        <div class="flex-shrink-0">
-                                            <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd"
-                                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                                    clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <div class="ml-3">
-                                            <p class="text-sm text-blue-700">
-                                                Estás por quitarle la cartera a
-                                                <strong>{{ $sourceCollector->name }}</strong>.
-                                                Actualmente tiene <strong>{{ $activeCreditsCount }} créditos
-                                                    activos</strong>.
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <p class="text-sm text-blue-700">
+                                        Origen: <strong>{{ $sourceCollector->name }}</strong>
+                                    </p>
                                 </div>
                             @endif
 
+                            <div class="mb-4 border border-gray-200 rounded-md p-3">
+                                <div class="flex justify-between items-center mb-2 pb-2 border-b border-gray-100">
+                                    <span class="text-xs font-bold text-gray-500 uppercase">Créditos Disponibles</span>
+
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" wire:model.live="selectAll"
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        <span class="ml-2 text-sm text-gray-600 font-bold">Seleccionar Todos</span>
+                                    </label>
+                                </div>
+
+                                <div class="max-h-48 overflow-y-auto space-y-2 pr-1">
+                                    @forelse($creditsList as $credit)
+                                        <label
+                                            class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer border border-transparent hover:border-gray-200 transition">
+
+                                            <input type="checkbox" value="{{ $credit['id'] }}"
+                                                wire:model.live="selectedCredits"
+                                                class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm">
+
+                                            <div class="text-sm w-full">
+                                                <div class="flex justify-between">
+                                                    <span class="font-bold text-gray-700">
+                                                        {{ $credit['client_name'] }}
+                                                    </span>
+
+                                                    <span class="text-gray-600 font-mono">
+                                                        ${{ number_format($credit['amount_pending'], 2, ',', '.') }}
+                                                    </span>
+                                                </div>
+                                                <p class="text-xs text-gray-400">Crédito #{{ $credit['id'] }}</p>
+                                            </div>
+                                        </label>
+                                    @empty
+                                        <p class="text-sm text-center text-gray-400 py-4">Este cobrador no tiene
+                                            créditos activos.</p>
+                                    @endforelse
+                                </div>
+
+                                <div class="mt-2 text-right">
+                                    <span class="text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">
+                                        {{ count($selectedCredits) }} seleccionados
+                                    </span>
+                                </div>
+                                @error('selectedCredits')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
                             <div class="mt-4">
-                                <label class="block text-sm font-medium text-gray-700">Seleccionar Nuevo
-                                    Responsable</label>
+                                <label class="block text-sm font-medium text-gray-700">Nuevo Responsable
+                                    (Destino)</label>
                                 <select wire:model="targetCollectorId"
                                     class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                                     <option value="">-- Elegir Cobrador --</option>
@@ -48,11 +83,6 @@
                                     <span class="text-red-500 text-xs">{{ $message }}</span>
                                 @enderror
                             </div>
-
-                            <p class="text-xs text-gray-500 mt-4">
-                                * Los pagos históricos seguirán a nombre del cobrador original.<br>
-                                * Solo se moverán los créditos activos y las cuotas futuras.
-                            </p>
                         </div>
 
                         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
