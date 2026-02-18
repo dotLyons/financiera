@@ -7,6 +7,7 @@ use App\Src\Client\Models\ClientModel;
 use App\Src\Credits\Actions\CreateCreditAction;
 use App\Src\Credits\DTOs\CreateCreditData as DTOsCreateCreditData;
 use App\Src\Credits\Enums\PaymentFrequencyEnum;
+use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -23,8 +24,8 @@ class CreateCredit extends Component
     public $date_of_award;
 
     // --- NUEVAS PROPIEDADES PARA MIGRACIÓN ---
-    public $start_installment = 1; // Por defecto inicia en la 1
-    public $historical_collector_id = ''; // Opcional, solo si start > 1
+    public $start_installment = 1;
+    public $historical_collector_id = '';
 
     public function mount()
     {
@@ -59,26 +60,38 @@ class CreateCredit extends Component
             'start_date' => 'required|date',
             'date_of_award' => 'required|date',
 
-            // Validaciones Nuevas
+            // Validaciones Nuevas (Mantenemos esto por si lo usas en la vista)
             'start_installment' => 'required|integer|min:1|lte:installments_count',
             'historical_collector_id' => [
                 'nullable',
-                // Obligatorio si empieza después de la cuota 1
                 Rule::requiredIf(fn() => $this->start_installment > 1),
                 'exists:users,id'
             ],
         ]);
 
         // 2. Ejecutar la Acción
-        // Pasamos los datos validados al DTO
         $dto = DTOsCreateCreditData::fromArray($validated);
 
-        $createCreditAction->execute($dto);
+        // IMPORTANTE: Capturamos el crédito creado para obtener su ID
+        $credit = $createCreditAction->execute($dto);
 
-        // 3. Feedback y Reset
+        // 3. LÓGICA DE INTERCEPCIÓN (NUEVO)
+        // Verificamos si es un crédito histórico (fecha anterior a hoy)
+        $startDate = Carbon::parse($this->start_date);
+        $today = Carbon::today();
+
+        if ($startDate->lessThan($today)) {
+            session()->flash('flash.banner', 'Crédito creado. Al ser una fecha pasada, por favor regularice los pagos históricos.');
+            session()->flash('flash.bannerStyle', 'warning'); // Color amarillo/naranja para llamar la atención
+
+            // Redirigimos a la pantalla de regularización
+            return redirect()->route('credits.regularize', $credit->id);
+        }
+
+        // 4. Feedback normal y Reset (Si es fecha actual o futura)
         session()->flash('flash.banner', 'Crédito creado correctamente.');
         session()->flash('flash.bannerStyle', 'success');
 
-        return redirect()->route('dashboard');
+        return redirect()->route('credits.index'); // O dashboard, según prefieras
     }
 }

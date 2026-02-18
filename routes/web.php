@@ -3,6 +3,7 @@
 use App\Http\Controllers\ReportController;
 use App\Livewire\Credits\CreateCredit;
 use App\Livewire\Credits\EditCredit;
+use App\Livewire\Livewire\Credits\RegularizeCredit;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -86,6 +87,7 @@ Route::middleware([
             Route::get('/credits', \App\Livewire\Credits\Index::class)->name('credits.index');
             Route::get('/credits/create', CreateCredit::class)->name('credits.create');
             Route::get('/credits/{credit}/edit', EditCredit::class)->name('credits.edit');
+            Route::get('/credits/regularize/{credit}', \App\Livewire\Credits\RegularizeCredit::class)->name('credits.regularize');
 
             // Clientes
             Route::get('/clients', \App\Livewire\Clients\Index::class)->name('clients.index');

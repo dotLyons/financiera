@@ -126,7 +126,8 @@
                                 @forelse($lateInstallments as $installment)
                                     <tr class="bg-white border-b hover:bg-gray-50">
                                         <td class="px-6 py-4 font-medium text-gray-900">
-                                            {{ $installment->credit->client->name ?? 'Desconocido' }}
+                                            {{ $installment->credit->client->last_name ?? '' }}
+                                            {{ $installment->credit->client->first_name ?? 'Desconocido' }}
                                             <div class="text-xs text-gray-500">Crédito #{{ $installment->credit_id }}
                                             </div>
                                         </td>
