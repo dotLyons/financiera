@@ -65,7 +65,7 @@ Route::middleware([
     // =========================================================================
     // Todo lo que esté aquí adentro será inaccesible si se intenta entrar
     // fuera del horario permitido definido en App\Http\Middleware\CheckSystemHours
-    Route::middleware(['hours'])->group(function () {
+    //Route::middleware(['hours'])->group(function () {
         // 🚦 CONTROLADOR DE TRÁFICO (Redirección inteligente)
         Route::get('/dashboard', function () {
             $user = auth()->user();
@@ -123,6 +123,6 @@ Route::middleware([
             Route::get('/collector/my-cash', \App\Livewire\Collector\MyCash::class)->name('collector.my-cash');
             Route::get('/collector/receipt/{payment}', [\App\Http\Controllers\CollectorReportController::class, 'printPaymentReceipt'])->name('collector.receipt.print');
         });
-    }); // Fin del grupo 'hours'
+    //}); // Fin del grupo 'hours'
 
 });

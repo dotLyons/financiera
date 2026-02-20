@@ -35,23 +35,23 @@
 
                                     <div
                                         class="p-3 bg-gray-50 rounded-md border border-gray-200 flex justify-between items-center">
-                                        <span class="text-xs font-bold text-gray-500 uppercase">Saldo tras el
-                                            pago:</span>
+                                        <span class="text-xs font-bold text-gray-500 uppercase">Estado de esta
+                                            cuota:</span>
 
                                         @php
                                             $balance = $this->calculatedBalance;
                                         @endphp
 
                                         <span
-                                            class="text-lg font-bold
-                                            {{ $balance == 0 ? 'text-green-600' : ($balance < 0 ? 'text-red-600' : 'text-gray-800') }}">
+                                            class="text-sm font-bold
+                                            {{ $balance == 0 ? 'text-green-600' : ($balance < 0 ? 'text-indigo-600' : 'text-gray-800') }}">
 
                                             @if ($balance < -0.01)
-                                                Excede por ${{ number_format(abs($balance), 2) }}
+                                                Cascada a siguientes: ${{ number_format(abs($balance), 2) }}
                                             @elseif(abs($balance) < 0.01)
-                                                $ 0.00 (Pagado Total)
+                                                $ 0.00 (Pagada Total)
                                             @else
-                                                $ {{ number_format($balance, 2) }} (Pendiente)
+                                                $ {{ number_format($balance, 2) }} (Quedará Pendiente)
                                             @endif
                                         </span>
                                     </div>
@@ -88,7 +88,7 @@
                                     </div>
 
                                     @if ($isMixed)
-                                        <div class="p-3 bg-gray-50 rounded-md border border-gray-200 mt-2">
+                                        <div class="p-3 bg-indigo-50 rounded-md border border-indigo-100 mt-2">
                                             <p class="text-xs text-indigo-600 font-bold mb-2 uppercase">Segundo Método
                                             </p>
                                             <div class="grid grid-cols-2 gap-4">
@@ -138,11 +138,16 @@
                 </div>
             </div>
         </div>
-
-        <script>
+    @endif
+    <script>
+        document.addEventListener('livewire:initialized', () => {
             window.addEventListener('open-pdf', event => {
                 window.open(event.detail.url, '_blank');
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             });
-        </script>
-    @endif
+        });
+    </script>
 </div>

@@ -29,25 +29,91 @@
                 @foreach ($groupedClients as $group)
                     <div class="bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
 
-                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                            <div>
-                                <h3 class="text-lg font-bold text-gray-900">{{ $group['client']->full_name }}</h3>
-                                <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($group['client']->address) }}"
-                                    target="_blank" class="text-xs text-indigo-600 flex items-center hover:underline">
-                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
-                                        </path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    </svg>
-                                    {{ $group['client']->address }}
-                                </a>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-xs text-gray-500 uppercase">Total a Cobrar</span>
-                                <span class="block text-lg font-bold text-gray-800">$
-                                    {{ number_format($group['total_due'], 0) }}</span>
+                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1 pr-3">
+                                    <h3 class="text-lg font-bold text-gray-900">{{ $group['client']->full_name }}</h3>
+
+                                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                                        <div class="space-y-1.5">
+                                            @if ($group['client']->address)
+                                                <a href="https://maps.google.com/?q={{ urlencode($group['client']->address) }}"
+                                                    target="_blank"
+                                                    class="text-xs text-indigo-600 flex items-start hover:underline">
+                                                    <svg class="w-3.5 h-3.5 mr-1 mt-0.5 flex-shrink-0" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                                                        </path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z">
+                                                        </path>
+                                                    </svg>
+                                                    <span class="leading-tight">{{ $group['client']->address }}</span>
+                                                </a>
+                                            @endif
+
+                                            @if ($group['client']->phone)
+                                                <a href="tel:{{ $group['client']->phone }}"
+                                                    class="text-xs text-indigo-600 flex items-center hover:underline">
+                                                    <svg class="w-3.5 h-3.5 mr-1 flex-shrink-0" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                                        </path>
+                                                    </svg>
+                                                    {{ $group['client']->phone }}
+                                                </a>
+                                            @endif
+                                        </div>
+
+                                        <div
+                                            class="space-y-1.5 pt-2 sm:pt-0 border-t border-gray-200 sm:border-t-0 sm:border-l sm:border-gray-200 sm:pl-3">
+                                            @if ($group['client']->second_address)
+                                                <a href="https://maps.google.com/?q={{ urlencode($group['client']->second_address) }}"
+                                                    target="_blank"
+                                                    class="text-xs text-orange-600 flex items-start hover:underline">
+                                                    <svg class="w-3.5 h-3.5 mr-1 mt-0.5 text-orange-500 flex-shrink-0"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                                                        </path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z">
+                                                        </path>
+                                                    </svg>
+                                                    <span class="leading-tight">Ref:
+                                                        {{ $group['client']->second_address }}</span>
+                                                </a>
+                                            @endif
+
+                                            @if ($group['client']->reference_phone)
+                                                <a href="tel:{{ $group['client']->reference_phone }}"
+                                                    class="text-xs text-orange-600 flex items-center hover:underline">
+                                                    <svg class="w-3.5 h-3.5 mr-1 text-orange-500 flex-shrink-0"
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                                        </path>
+                                                    </svg>
+                                                    Ref: {{ $group['client']->reference_phone }}
+                                                </a>
+                                            @endif
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <div class="text-right flex-shrink-0">
+                                    <span class="text-xs text-gray-500 uppercase">Total a Cobrar</span>
+                                    <span class="block text-lg font-bold text-gray-800">$
+                                        {{ number_format($group['total_due'], 0) }}</span>
+                                </div>
                             </div>
                         </div>
 
