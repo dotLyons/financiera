@@ -16,13 +16,15 @@
         @if ($groupedClients->isEmpty())
             <div class="bg-white rounded-lg p-8 text-center border-2 border-dashed border-gray-300">
                 <div
-                    class="mx-auto h-12 w-12 text-green-400 flex items-center justify-center rounded-full bg-green-50 mb-3">
+                    class="mx-auto h-12 w-12 text-gray-400 flex items-center justify-center rounded-full bg-gray-50 mb-3">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4">
+                        </path>
                     </svg>
                 </div>
-                <h3 class="text-sm font-medium text-gray-900">¡Todo limpio!</h3>
-                <p class="mt-1 text-sm text-gray-500">No hay cuotas pendientes ni vencidas para hoy.</p>
+                <h3 class="text-sm font-medium text-gray-900">No hay clientes asignados</h3>
+                <p class="mt-1 text-sm text-gray-500">Actualmente no tienes créditos activos en tu cartera.</p>
             </div>
         @else
             <div class="space-y-8">
@@ -32,7 +34,17 @@
                         <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
                             <div class="flex justify-between items-start">
                                 <div class="flex-1 pr-3">
-                                    <h3 class="text-lg font-bold text-gray-900">{{ $group['client']->full_name }}</h3>
+                                    <div class="flex items-center space-x-2">
+                                        <h3 class="text-lg font-bold text-gray-900">{{ $group['client']->full_name }}
+                                        </h3>
+
+                                        @if ($group['is_advance'])
+                                            <span
+                                                class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
+                                                Al día
+                                            </span>
+                                        @endif
+                                    </div>
 
                                     <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
 
@@ -110,60 +122,92 @@
                                 </div>
 
                                 <div class="text-right flex-shrink-0">
-                                    <span class="text-xs text-gray-500 uppercase">Total a Cobrar</span>
-                                    <span class="block text-lg font-bold text-gray-800">$
-                                        {{ number_format($group['total_due'], 0) }}</span>
+                                    <span
+                                        class="text-xs text-gray-500 uppercase">{{ $group['is_advance'] ? 'Próxima Cuota' : 'Total a Cobrar' }}</span>
+                                    <span
+                                        class="block text-lg font-bold {{ $group['is_advance'] ? 'text-gray-400' : 'text-gray-800' }}">
+                                        $ {{ number_format($group['total_due'], 0) }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="divide-y divide-gray-100">
-                            @foreach ($group['installments'] as $installment)
-                                <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition">
-
-                                    <div class="flex-1">
-                                        <div class="flex items-center space-x-2 mb-1">
-                                            <span class="text-sm font-bold text-gray-700">Cuota
-                                                #{{ $installment->installment_number }}</span>
-
-                                            @if ($installment->due_date < now()->today())
-                                                <span
-                                                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 border border-red-200">
-                                                    Venció {{ $installment->due_date->format('d/m') }}
-                                                </span>
-                                            @else
-                                                <span
-                                                    class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-600 border border-blue-200">
-                                                    Vence Hoy
-                                                </span>
-                                            @endif
-                                        </div>
-
-                                        <div class="text-xs text-gray-500">
-                                            @if ($installment->amount_paid > 0)
-                                                Pagado parcial: ${{ number_format($installment->amount_paid, 0) }}
-                                            @endif
-                                        </div>
-                                    </div>
-
-                                    <div class="flex items-center space-x-4">
-                                        <span class="font-bold text-gray-800 text-lg">
-                                            $ {{ number_format($installment->amount - $installment->amount_paid, 0) }}
-                                        </span>
-
-                                        <a href="{{ route('collector.checkout', $installment->id) }}"
-                                            class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 4v16m8-8H4"></path>
-                                            </svg>
-                                        </a>
-                                    </div>
-
+                        @if ($group['is_advance'])
+                            <div class="p-6 bg-white flex flex-col items-center justify-center text-center">
+                                <div class="rounded-full bg-green-50 p-3 mb-2">
+                                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
                                 </div>
-                            @endforeach
-                        </div>
+                                <p class="text-sm text-gray-500 mb-4">No hay vencimientos pendientes ni atrasos.</p>
+
+                                @if ($group['installments']->isNotEmpty())
+                                    <a href="{{ route('collector.checkout', $group['installments']->first()->id) }}"
+                                        class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Adelantar Cuota #{{ $group['installments']->first()->installment_number }}
+                                    </a>
+                                @else
+                                    <p class="text-xs text-gray-400 font-bold uppercase">Crédito Finalizado</p>
+                                @endif
+                            </div>
+                        @else
+                            <div class="divide-y divide-gray-100">
+                                @foreach ($group['installments'] as $installment)
+                                    <div class="p-4 flex items-center justify-between hover:bg-gray-50 transition">
+
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span class="text-sm font-bold text-gray-700">Cuota
+                                                    #{{ $installment->installment_number }}</span>
+
+                                                @if ($installment->due_date < now()->today())
+                                                    <span
+                                                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-600 border border-red-200">
+                                                        Venció {{ $installment->due_date->format('d/m') }}
+                                                    </span>
+                                                @else
+                                                    <span
+                                                        class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-600 border border-blue-200">
+                                                        Vence Hoy
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            <div class="text-xs text-gray-500">
+                                                @if ($installment->amount_paid > 0)
+                                                    Pagado parcial: ${{ number_format($installment->amount_paid, 0) }}
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center space-x-4">
+                                            <span class="font-bold text-gray-800 text-lg">
+                                                $
+                                                {{ number_format($installment->amount - $installment->amount_paid, 0) }}
+                                            </span>
+
+                                            <a href="{{ route('collector.checkout', $installment->id) }}"
+                                                class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                            </a>
+                                        </div>
+
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
                     </div>
                 @endforeach
             </div>

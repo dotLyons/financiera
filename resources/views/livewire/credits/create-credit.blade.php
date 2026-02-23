@@ -44,6 +44,66 @@
                                     </select>
                                 </div>
                                 <x-input-error for="client_id" class="mt-2" />
+                                @if ($client_id)
+                                    @php
+                                        $selectedClient = collect($clients)->firstWhere('id', $client_id);
+
+                                        if ($selectedClient) {
+                                            $scoreColors = [
+                                                0 => 'bg-gray-50 text-gray-700 border-gray-200',
+                                                1 => 'bg-green-50 text-green-800 border-green-200',
+                                                2 => 'bg-blue-50 text-blue-800 border-blue-200',
+                                                3 => 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                                                4 => 'bg-orange-50 text-orange-800 border-orange-200',
+                                                5 => 'bg-red-50 text-red-800 border-red-300 shadow-sm',
+                                            ];
+                                            $scoreLabels = [
+                                                0 => 'SIN HISTORIAL',
+                                                1 => 'EXCELENTE PAGADOR',
+                                                2 => 'BUEN PAGADOR',
+                                                3 => 'PAGADOR REGULAR (CON ATRASOS)',
+                                                4 => 'CLIENTE RIESGOSO',
+                                                5 => 'MOROSO / INCOBRABLE (¡ALERTA!)',
+                                            ];
+                                            $boxColor = $scoreColors[$selectedClient->credit_score] ?? $scoreColors[0];
+                                            $boxLabel = $scoreLabels[$selectedClient->credit_score] ?? $scoreLabels[0];
+                                        }
+                                    @endphp
+
+                                    @if ($selectedClient)
+                                        <div
+                                            class="mt-4 p-3 rounded-md border {{ $boxColor }} transition-all duration-300">
+                                            <div class="flex items-start">
+                                                <div class="flex-shrink-0 mt-0.5">
+                                                    @if ($selectedClient->credit_score >= 4)
+                                                        <svg class="h-5 w-5 opacity-80" fill="none"
+                                                            viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                        </svg>
+                                                    @else
+                                                        <svg class="h-5 w-5 opacity-80" fill="none"
+                                                            viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                        </svg>
+                                                    @endif
+                                                </div>
+                                                <div class="ml-3 w-full">
+                                                    <h3 class="text-xs font-black uppercase tracking-wider">
+                                                        Perfil Crediticio: {{ $boxLabel }}
+                                                    </h3>
+                                                    <div class="mt-1 text-xs opacity-90">
+                                                        <p>{{ $selectedClient->credit_score_notes ?? 'No hay datos suficientes.' }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endif
                             </div>
 
                             <div>
@@ -193,33 +253,47 @@
                     </div>
 
                     @if ($amount_net && $interest_rate && $installments_count)
+                        @php
+                            $teoricalTotalAmount = $amount_net * (1 + $interest_rate / 100);
+
+                            $teoricalInstallmentAmount = $teoricalTotalAmount / $installments_count;
+                            $roundedInstallmentAmount = ceil($teoricalInstallmentAmount / 1000) * 1000;
+
+                            $finalTotalAmount = $roundedInstallmentAmount * $installments_count;
+                            $finalProfit = $finalTotalAmount - $amount_net;
+                        @endphp
+
                         <div class="mt-8 rounded-lg bg-indigo-50 border border-indigo-100 p-6">
-                            <h4 class="text-sm font-semibold text-indigo-900 uppercase tracking-wider mb-4">Resumen de
-                                la Operación</h4>
+                            <h4
+                                class="text-sm font-semibold text-indigo-900 uppercase tracking-wider mb-4 flex justify-between items-center">
+                                <span>Resumen de la Operación</span>
+                                <span
+                                    class="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded-full normal-case">Redondeo
+                                    Automático Aplicado</span>
+                            </h4>
 
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
                                 <div>
                                     <span class="block text-xs text-indigo-500">Monto Total a Devolver</span>
                                     <span class="block text-3xl font-bold text-indigo-700">
-                                        ${{ number_format($amount_net * (1 + $interest_rate / 100), 2) }}
+                                        ${{ number_format($finalTotalAmount, 2) }}
                                     </span>
-                                    <span class="text-xs text-indigo-400">Capital + Interés</span>
+                                    <span class="text-xs text-indigo-400">Capital + Interés (Redondeado)</span>
                                 </div>
 
                                 <div>
-                                    <span class="block text-xs text-indigo-500">Valor Estimado por Cuota</span>
+                                    <span class="block text-xs text-indigo-500">Valor Fijo por Cuota</span>
                                     <span class="block text-3xl font-bold text-indigo-700">
-                                        ${{ number_format(($amount_net * (1 + $interest_rate / 100)) / $installments_count, 2) }}
+                                        ${{ number_format($roundedInstallmentAmount, 2) }}
                                     </span>
-                                    <span class="text-xs text-indigo-400">Fijo x {{ $installments_count }}
+                                    <span class="text-xs text-indigo-400">Exactamente {{ $installments_count }}
                                         cuotas</span>
                                 </div>
 
                                 <div>
                                     <span class="block text-xs text-indigo-500">Ganancia Esperada (Interés)</span>
                                     <span class="block text-xl font-bold text-green-600 mt-2">
-                                        +
-                                        ${{ number_format($amount_net * (1 + $interest_rate / 100) - $amount_net, 2) }}
+                                        + ${{ number_format($finalProfit, 2) }}
                                     </span>
                                 </div>
                             </div>

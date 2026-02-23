@@ -25,13 +25,37 @@
 
                             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                    Registrar Cobro - Cuota #{{ $installment->installment_number }}
+                                    Registrar Cobro - Cuota #{{ $installment->installment_number ?? '' }}
                                 </h3>
 
                                 <div class="mt-2">
-                                    <p class="text-sm text-gray-500 mb-2">
-                                        Cliente: <strong>{{ $installment->credit->client->full_name }}</strong>
-                                    </p>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <p class="text-sm text-gray-500">
+                                            Cliente:
+                                            <strong>{{ $installment->credit->client->full_name ?? '' }}</strong>
+                                        </p>
+
+                                        @php
+                                            $regDebt = max(
+                                                0,
+                                                ($installment->amount ?? 0) - ($installment->amount_paid ?? 0),
+                                            );
+                                            $punDebt = max(
+                                                0,
+                                                ($installment->punitory_interest ?? 0) -
+                                                    ($installment->punitory_paid ?? 0),
+                                            );
+                                        @endphp
+
+                                        @if ($punDebt > 0)
+                                            <div class="text-right text-[10px] uppercase font-bold text-gray-400">
+                                                <span class="block text-gray-600">Cuota:
+                                                    ${{ number_format($regDebt, 2) }}</span>
+                                                <span class="block text-red-500">Mora:
+                                                    ${{ number_format($punDebt, 2) }}</span>
+                                            </div>
+                                        @endif
+                                    </div>
 
                                     <div
                                         class="p-3 bg-gray-50 rounded-md border border-gray-200 flex justify-between items-center">
@@ -43,12 +67,8 @@
                                         @endphp
 
                                         <span
-                                            class="text-sm font-bold
-                                            {{ $balance == 0 ? 'text-green-600' : ($balance < 0 ? 'text-indigo-600' : 'text-gray-800') }}">
-
-                                            @if ($balance < -0.01)
-                                                Cascada a siguientes: ${{ number_format(abs($balance), 2) }}
-                                            @elseif(abs($balance) < 0.01)
+                                            class="text-sm font-bold {{ $balance <= 0.01 ? 'text-green-600' : 'text-gray-800' }}">
+                                            @if ($balance <= 0.01)
                                                 $ 0.00 (Pagada Total)
                                             @else
                                                 $ {{ number_format($balance, 2) }} (Quedará Pendiente)

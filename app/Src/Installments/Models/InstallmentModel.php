@@ -16,6 +16,8 @@ class InstallmentModel extends Model
         'installment_number',
         'amount',
         'amount_paid',
+        'punitory_interest',
+        'punitory_paid',
         'due_date',
         'status',
     ];
@@ -26,6 +28,8 @@ class InstallmentModel extends Model
             'due_date' => 'date',
             'amount' => 'decimal:2',
             'amount_paid' => 'decimal:2',
+            'punitory_paid' => 'decimal:2',
+            'punitory_interest' => 'decimal:2',
             'status' => InstallmentStatusEnum::class,
         ];
     }

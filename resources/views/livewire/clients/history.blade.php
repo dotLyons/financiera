@@ -40,6 +40,45 @@
                             {{ $client->rubro ?? 'Sin Rubro' }}
                         </p>
 
+                        @php
+                            $scoreColors = [
+                                0 => 'bg-gray-100 text-gray-600 border-gray-200',
+                                1 => 'bg-green-100 text-green-700 border-green-200',
+                                2 => 'bg-blue-100 text-blue-700 border-blue-200',
+                                3 => 'bg-yellow-100 text-yellow-700 border-yellow-200',
+                                4 => 'bg-orange-100 text-orange-700 border-orange-200',
+                                5 => 'bg-red-100 text-red-700 border-red-200',
+                            ];
+                            $scoreLabels = [
+                                0 => 'NUEVO / SIN HISTORIAL',
+                                1 => 'NIVEL 1: EXCELENTE',
+                                2 => 'NIVEL 2: BUENO',
+                                3 => 'NIVEL 3: REGULAR',
+                                4 => 'NIVEL 4: RIESGOSO',
+                                5 => 'NIVEL 5: INCOBRABLE',
+                            ];
+                            $sColor = $scoreColors[$client->credit_score] ?? $scoreColors[0];
+                            $sLabel = $scoreLabels[$client->credit_score] ?? $scoreLabels[0];
+                        @endphp
+
+                        <div class="mb-4 flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-3">
+                            <span
+                                class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black border {{ $sColor }}">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                                    </path>
+                                </svg>
+                                {{ $sLabel }}
+                            </span>
+                            @if ($client->credit_score_notes)
+                                <span
+                                    class="text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-100">
+                                    "{{ $client->credit_score_notes }}"
+                                </span>
+                            @endif
+                        </div>
+
                         <div class="flex flex-col text-sm text-gray-500 space-y-1">
 
                             <div class="flex items-center space-x-3">
@@ -127,11 +166,15 @@
                 @php
                     $totalPaid = $credit->installments->sum('amount_paid');
                     $totalAmount = $credit->amount_total;
+
+                    // NUEVO: Cálculos para la Mora (Generada y Pagada)
+                    $totalPunitory = $credit->installments->sum('punitory_interest');
+                    $totalPunitoryPaid = $credit->installments->sum('punitory_paid');
+
                     $progress = $totalAmount > 0 ? ($totalPaid / $totalAmount) * 100 : 0;
                     $isPaid = $credit->status->value === 'paid';
                     $isDefaulted = $credit->status->value === 'defaulted';
 
-                    // Colores dinámicos
                     $borderColor = $isPaid
                         ? 'border-green-500'
                         : ($isDefaulted
@@ -195,14 +238,26 @@
 
                         <div class="col-span-4 border-l border-gray-100 pl-4 pr-4">
                             <div class="flex justify-between text-xs font-semibold uppercase text-gray-500 mb-1">
-                                <span>Progreso</span>
+                                <span>Progreso de Capital</span>
                                 <span>${{ number_format($totalPaid, 0) }} /
                                     ${{ number_format($totalAmount, 0) }}</span>
                             </div>
-                            <div class="w-full bg-gray-100 rounded-full h-2">
+
+                            <div class="w-full bg-gray-100 rounded-full h-2 mb-2">
                                 <div class="h-2 rounded-full {{ $progressColor }}"
-                                    style="width: {{ $progress }}%"></div>
+                                    style="width: {{ min($progress, 100) }}%"></div>
                             </div>
+
+                            @if ($totalPunitory > 0)
+                                <div class="flex justify-end items-center mt-1">
+                                    <span
+                                        class="text-[10px] uppercase font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100"
+                                        title="Interés generado por atrasos en este crédito">
+                                        MORA: ${{ number_format($totalPunitoryPaid, 0) }} Cobrados /
+                                        ${{ number_format($totalPunitory, 0) }} Total
+                                    </span>
+                                </div>
+                            @endif
                         </div>
 
                         <div class="col-span-1 flex justify-end">
@@ -313,17 +368,47 @@
                                                 {{ $installment->installment_number }}
                                             </td>
                                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                <span
-                                                    class="{{ $installment->due_date < now() && $installment->status->value != 'paid' ? 'text-red-600 font-bold' : '' }}">
-                                                    {{ $installment->due_date->format('d/m/Y') }}
-                                                </span>
+                                                <div class="flex items-center space-x-2">
+                                                    <span
+                                                        class="{{ $installment->due_date < now() && $installment->status->value != 'paid' ? 'text-red-600 font-bold' : '' }}">
+                                                        {{ $installment->due_date->format('d/m/Y') }}
+                                                    </span>
+
+                                                    @if ($installment->status->value != 'paid')
+                                                        <button
+                                                            wire:click="$dispatch('openEditDateModal', { installmentId: {{ $installment->id }} })"
+                                                            class="text-gray-400 hover:text-blue-600 transition"
+                                                            title="Reprogramar fecha">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                                viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
+                                                                </path>
+                                                            </svg>
+                                                        </button>
+                                                    @endif
+                                                </div>
                                             </td>
+
                                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
                                                 ${{ number_format($installment->amount, 2) }}
+                                                @if ($installment->punitory_interest > 0)
+                                                    <span class="block text-[10px] text-red-500 font-bold mt-0.5">
+                                                        +${{ number_format($installment->punitory_interest, 2) }} mora
+                                                    </span>
+                                                @endif
                                             </td>
+
                                             <td
                                                 class="px-6 py-3 whitespace-nowrap text-sm text-green-600 font-medium text-right">
                                                 ${{ number_format($installment->amount_paid, 2) }}
+                                                @if ($installment->punitory_paid > 0)
+                                                    <span class="block text-[10px] text-orange-400 font-bold mt-0.5"
+                                                        title="Mora pagada">
+                                                        +${{ number_format($installment->punitory_paid, 2) }} mora
+                                                    </span>
+                                                @endif
                                             </td>
 
                                             <td class="px-6 py-3 whitespace-nowrap text-center">
@@ -376,8 +461,9 @@
                     </div>
                 @endforelse
             </div>
-        </div>
 
-        @livewire('payments.create-payment')
-        @livewire('credits.refinance-modal')
+            @livewire('payments.create-payment')
+            @livewire('credits.refinance-modal')
+            @livewire('installments.edit-date')
+        </div>
     </div>

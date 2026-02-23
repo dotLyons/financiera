@@ -26,6 +26,8 @@ class ClientModel extends Model
         'second_address',
         'status',
         'notes',
+        'credit_score',
+        'credit_score_notes',
         'created_by',
     ];
 

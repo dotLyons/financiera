@@ -15,7 +15,7 @@ class Checkout extends Component
     public InstallmentModel $installment;
 
     public $amount;
-    public $payment_method = 'cash'; // Por defecto Efectivo
+    public $payment_method = 'cash';
 
     protected $rules = [
         'amount' => 'required|numeric|min:1',
@@ -24,69 +24,66 @@ class Checkout extends Component
 
     public function mount(InstallmentModel $installment)
     {
-        if ($installment->credit->collector_id !== auth()->id()) {
+        $user = auth()->user();
+
+        if ($user->role !== 'admin' && $installment->credit->collector_id !== $user->id) {
             abort(403, 'No tienes permiso para cobrar esta cuota.');
         }
 
         $this->installment = $installment;
 
-        $saldo = $installment->amount - $installment->amount_paid;
-        $this->amount = number_format($saldo, 2, '.', '');
+        $regularDebt = max(0, $installment->amount - $installment->amount_paid);
+        $punitoryDebt = max(0, $installment->punitory_interest - $installment->punitory_paid);
+
+        $totalDebt = $regularDebt + $punitoryDebt;
+        $this->amount = $totalDebt > 0 ? number_format($totalDebt, 2, '.', '') : '0.00';
     }
 
     public function processPayment()
     {
         $this->validate();
 
-        $installments = InstallmentModel::where('credit_id', $this->installment->credit_id)
-            ->where('status', '!=', 'paid')
-            ->orderBy('due_date', 'asc')
-            ->get();
-
-        $moneyInHand = (float) $this->amount;
-        $originalReceivedAmount = $moneyInHand;
         $transactionId = 'TX-' . strtoupper(Str::random(8));
+        $paymentAmount = (float) $this->amount;
 
-        DB::transaction(function () use ($installments, &$moneyInHand, $originalReceivedAmount, $transactionId) {
+        DB::transaction(function () use ($paymentAmount, $transactionId) {
 
-            foreach ($installments as $inst) {
-                if ($moneyInHand <= 0) {
-                    break;
-                }
+            PaymentsModel::create([
+                'credit_id' => $this->installment->credit_id,
+                'installment_id' => $this->installment->id,
+                'amount' => $paymentAmount,
+                'received_amount' => $paymentAmount,
+                'transaction_id' => $transactionId,
+                'payment_date' => now(),
+                'user_id' => auth()->id(),
+                'method' => $this->payment_method,
+            ]);
 
-                $debt = $inst->amount - $inst->amount_paid;
+            $regularDebt = $this->installment->amount - $this->installment->amount_paid;
 
-                $applyAmount = min($moneyInHand, $debt);
-
-                if ($applyAmount > 0) {
-                    PaymentsModel::create([
-                        'credit_id' => $inst->credit_id,
-                        'installment_id' => $inst->id,
-                        'amount' => $applyAmount,
-                        'received_amount' => $originalReceivedAmount,
-                        'transaction_id' => $transactionId,
-                        'payment_date' => now(),
-                        'user_id' => auth()->id(),
-                        'method' => $this->payment_method,
-                    ]);
-
-                    $inst->amount_paid += $applyAmount;
-
-                    if (abs($inst->amount - $inst->amount_paid) < 0.1) {
-                        $inst->status = 'paid';
-                    } else {
-                        $inst->status = 'partial';
-                    }
-                    $inst->save();
-
-                    $moneyInHand -= $applyAmount;
-                }
+            if ($paymentAmount <= $regularDebt) {
+                $this->installment->amount_paid += $paymentAmount;
+            } else {
+                $this->installment->amount_paid += $regularDebt;
+                $leftover = $paymentAmount - $regularDebt;
+                $this->installment->punitory_paid += $leftover;
             }
+
+            if ($this->installment->amount_paid >= ($this->installment->amount - 0.1)) {
+                $this->installment->status = 'paid';
+            } else {
+                $this->installment->status = 'partial';
+            }
+
+            $this->installment->save();
         });
 
-        // Flash message y volver a la hoja de ruta
-        session()->flash('flash.banner', '¡Pago registrado exitosamente en cascada!');
+        session()->flash('flash.banner', '¡Cobro registrado exitosamente!');
         session()->flash('flash.bannerStyle', 'success');
+
+        if (auth()->user()->role === 'admin') {
+            return redirect()->route('clients.history', $this->installment->credit->client_id);
+        }
 
         return redirect()->route('collector.dashboard');
     }

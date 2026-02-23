@@ -14,15 +14,22 @@ class CreateCreditAction
 {
     public function execute(CreateCreditData $data)
     {
-        $totalAmount = $data->amountNet * (1 + $data->interestRate / 100);
+        $teoricalTotalAmount = $data->amountNet * (1 + $data->interestRate / 100);
 
-        return DB::transaction(function () use ($data, $totalAmount) {
+        $teoricalInstallmentAmount = $teoricalTotalAmount / $data->installmentsCount;
+
+        $roundedInstallmentAmount = ceil($teoricalInstallmentAmount / 1000) * 1000;
+
+        $finalTotalAmount = $roundedInstallmentAmount * $data->installmentsCount;
+
+
+        return DB::transaction(function () use ($data, $finalTotalAmount, $roundedInstallmentAmount) {
 
             $credit = CreditsModel::create([
                 'client_id' => $data->clientId,
                 'collector_id' => $data->collectorId,
                 'amount_net' => $data->amountNet,
-                'amount_total' => $totalAmount,
+                'amount_total' => $finalTotalAmount,
                 'interest_rate' => $data->interestRate,
                 'installments_count' => $data->installmentsCount,
                 'payment_frequency' => $data->paymentFrequency,
@@ -31,16 +38,14 @@ class CreateCreditAction
                 'status' => 'active',
             ]);
 
-            $this->generateInstallments($credit, $data, $totalAmount);
+            $this->generateInstallments($credit, $data, $roundedInstallmentAmount);
 
             return $credit;
         });
     }
 
-    private function generateInstallments(CreditsModel $credit, CreateCreditData $data, float $totalAmount): void
+    private function generateInstallments(CreditsModel $credit, CreateCreditData $data, float $installmentAmount): void
     {
-        $installmentAmount = $totalAmount / $data->installmentsCount;
-
         $currentDate = $data->startDate->copy();
 
         for ($i = 1; $i <= $data->installmentsCount; $i++) {

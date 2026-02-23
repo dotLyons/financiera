@@ -2,10 +2,8 @@
 
 namespace App\Livewire\Payments;
 
-use App\Models\User;
 use App\Src\Installments\Models\InstallmentModel;
 use App\Src\Payments\Models\PaymentModel;
-use App\Src\Payments\Enums\PaymentMethodsEnum;
 use App\Src\Payments\Models\PaymentsModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -29,8 +27,12 @@ class CreatePayment extends Component
     {
         $this->installment = InstallmentModel::with('credit.client')->findOrFail($installmentId);
 
-        $remaining = $this->installment->amount - $this->installment->amount_paid;
-        $this->amount = $remaining;
+        // Deuda de cuota pura + Deuda de mora
+        $regularDebt = max(0, $this->installment->amount - $this->installment->amount_paid);
+        $punitoryDebt = max(0, $this->installment->punitory_interest - $this->installment->punitory_paid);
+
+        $totalDebt = $regularDebt + $punitoryDebt;
+        $this->amount = $totalDebt > 0 ? $totalDebt : 0;
 
         $this->reset(['isMixed', 'secondAmount', 'secondMethod']);
         $this->isOpen = true;
@@ -38,7 +40,10 @@ class CreatePayment extends Component
 
     public function getCalculatedBalanceProperty()
     {
-        $originalDebt = $this->installment->amount - $this->installment->amount_paid;
+        $regularDebt = $this->installment->amount - $this->installment->amount_paid;
+        $punitoryDebt = $this->installment->punitory_interest - $this->installment->punitory_paid;
+
+        $originalDebt = $regularDebt + $punitoryDebt;
         $proposedPayment = (float) $this->amount;
 
         if ($this->isMixed) {
@@ -54,6 +59,19 @@ class CreatePayment extends Component
         $this->resetValidation();
     }
 
+    private function distributePayment(float $paymentAmount)
+    {
+        $regularDebt = $this->installment->amount - $this->installment->amount_paid;
+
+        if ($paymentAmount <= $regularDebt) {
+            $this->installment->amount_paid += $paymentAmount;
+        } else {
+            $this->installment->amount_paid += $regularDebt;
+            $leftover = $paymentAmount - $regularDebt;
+            $this->installment->punitory_paid += $leftover;
+        }
+    }
+
     public function save()
     {
         $rules = [
@@ -63,98 +81,55 @@ class CreatePayment extends Component
 
         if ($this->isMixed) {
             $rules['secondAmount'] = 'required|numeric|min:1';
-            $rules['secondMethod'] = 'required|in:cash,transfer,debit_card,credit_card,mercadopago|different:method';
+            $rules['secondMethod'] = 'required|different:method';
         }
 
         $this->validate($rules);
 
-        $installments = InstallmentModel::where('credit_id', $this->installment->credit_id)
-            ->where('status', '!=', 'paid')
-            ->orderBy('due_date', 'asc')
-            ->get();
-
-        $totalCreditDebt = $installments->sum(function ($inst) {
-            return $inst->amount - $inst->amount_paid;
-        });
-
-        $totalProposedPayment = (float) $this->amount;
-        if ($this->isMixed) {
-            $totalProposedPayment += (float) $this->secondAmount;
-        }
-
-        if ($totalProposedPayment > ($totalCreditDebt + 0.01)) {
-            $this->addError('amount', 'El pago total ($' . number_format($totalProposedPayment, 2) . ') supera la deuda total del crédito ($' . number_format($totalCreditDebt, 2) . ').');
-            return;
-        }
-
         $transactionId = 'TX-' . strtoupper(Str::random(8));
         $lastPaymentId = null;
 
-        DB::transaction(function () use ($installments, $transactionId, &$lastPaymentId) {
+        DB::transaction(function () use ($transactionId, &$lastPaymentId) {
 
-            $moneyInHand1 = (float) $this->amount;
-            $originalAmount1 = $moneyInHand1;
+            $payment1 = PaymentsModel::create([
+                'credit_id' => $this->installment->credit_id,
+                'installment_id' => $this->installment->id,
+                'amount' => (float) $this->amount,
+                'received_amount' => (float) $this->amount,
+                'transaction_id' => $transactionId,
+                'payment_date' => now(),
+                'user_id' => auth()->id(),
+                'method' => $this->method,
+                'notes' => 'Cobro Sistema Admin'
+            ]);
+            $lastPaymentId = $payment1->id;
 
-            foreach ($installments as $inst) {
-                if ($moneyInHand1 <= 0) break;
+            $this->distributePayment((float) $this->amount);
 
-                $debt = $inst->amount - $inst->amount_paid;
-                if ($debt <= 0) continue;
-
-                $apply = min($moneyInHand1, $debt);
-
-                $payment = PaymentsModel::create([
-                    'credit_id' => $inst->credit_id,
-                    'installment_id' => $inst->id,
-                    'amount' => $apply,
-                    'received_amount' => $originalAmount1,
+            if ($this->isMixed && $this->secondAmount > 0) {
+                $payment2 = PaymentsModel::create([
+                    'credit_id' => $this->installment->credit_id,
+                    'installment_id' => $this->installment->id,
+                    'amount' => (float) $this->secondAmount,
+                    'received_amount' => (float) $this->secondAmount,
                     'transaction_id' => $transactionId,
                     'payment_date' => now(),
                     'user_id' => auth()->id(),
-                    'method' => $this->method,
-                    'notes' => 'Cobro Sistema Admin'
+                    'method' => $this->secondMethod,
+                    'notes' => 'Cobro Sistema Admin (Mixto)'
                 ]);
-                $lastPaymentId = $payment->id;
+                $lastPaymentId = $payment2->id;
 
-                $inst->amount_paid += $apply;
-                $inst->status = abs($inst->amount - $inst->amount_paid) < 0.1 ? 'paid' : 'partial';
-                $inst->save();
-
-                $moneyInHand1 -= $apply;
+                $this->distributePayment((float) $this->secondAmount);
             }
 
-            if ($this->isMixed && $this->secondAmount > 0) {
-                $moneyInHand2 = (float) $this->secondAmount;
-                $originalAmount2 = $moneyInHand2;
-
-                foreach ($installments as $inst) {
-                    if ($moneyInHand2 <= 0) break;
-
-                    $debt = $inst->amount - $inst->amount_paid;
-                    if ($debt <= 0) continue;
-
-                    $apply = min($moneyInHand2, $debt);
-
-                    $payment = PaymentsModel::create([
-                        'credit_id' => $inst->credit_id,
-                        'installment_id' => $inst->id,
-                        'amount' => $apply,
-                        'received_amount' => $originalAmount2,
-                        'transaction_id' => $transactionId,
-                        'payment_date' => now(),
-                        'user_id' => auth()->id(),
-                        'method' => $this->secondMethod,
-                        'notes' => 'Cobro Sistema Admin (Mixto)'
-                    ]);
-                    $lastPaymentId = $payment->id;
-
-                    $inst->amount_paid += $apply;
-                    $inst->status = abs($inst->amount - $inst->amount_paid) < 0.1 ? 'paid' : 'partial';
-                    $inst->save();
-
-                    $moneyInHand2 -= $apply;
-                }
+            if ($this->installment->amount_paid >= ($this->installment->amount - 0.1)) {
+                $this->installment->status = 'paid';
+            } else {
+                $this->installment->status = 'partial';
             }
+
+            $this->installment->save();
         });
 
         $this->isOpen = false;
