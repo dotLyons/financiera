@@ -100,7 +100,8 @@ Route::middleware([
             Route::get('/report/credit/{credit}', [ReportController::class, 'creditDetail'])->name('report.credit');
             Route::get('/contract/new/{credit}', [ReportController::class, 'printContract'])->name('contract.new');
             Route::get('/contract/refinance/{credit}', [ReportController::class, 'printRefinance'])->name('contract.refinance');
-            Route::get('/report/daily/{user}/{date}', [ReportController::class, 'printDailyReport'])->name('report.daily');
+            Route::get('/report/daily/{user}/{date}', [ReportController::class, 'printDailyReport'])->name('report.daily.collector');
+            Route::get('/report/roadmap/{user}', [ReportController::class, 'printRoadmap'])->name('report.roadmap');
 
             // Cobradores
             Route::get('/collectors', \App\Livewire\Collectors\Index::class)->name('collectors.index');

@@ -85,20 +85,27 @@
                         </div>
 
                         <div class="bg-indigo-100 px-6 py-4 border-t border-indigo-200">
-                            {{-- Usamos el MISMO modal de rendición --}}
-                            <button
-                                wire:click="$dispatch('openSurrenderModal', { collectorId: {{ $admin->id }}, currentBalance: {{ $admin->wallet_balance }} })"
-                                class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-800 transition shadow-sm">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4">
-                                    </path>
-                                </svg>
-                                Ingresar a Caja Central
-                            </button>
-                            <p class="text-[10px] text-center text-indigo-500 mt-2">
-                                * Registrar ingreso de dinero a la caja fuerte
-                            </p>
+                            {{-- LÓGICA DE BOTÓN IGUAL A LOS COBRADORES --}}
+                            @if ($admin->wallet_balance > 0.01)
+                                <button
+                                    wire:click="$dispatch('openSurrenderModal', { collectorId: {{ $admin->id }}, currentBalance: {{ $admin->wallet_balance }} })"
+                                    class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-800 transition shadow-sm">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4">
+                                        </path>
+                                    </svg>
+                                    Ingresar a Caja Central
+                                </button>
+                                <p class="text-[10px] text-center text-indigo-500 mt-2">
+                                    * Registrar ingreso de dinero a la caja fuerte
+                                </p>
+                            @else
+                                <button disabled
+                                    class="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-300 border border-transparent rounded-md font-bold text-xs text-gray-500 uppercase tracking-widest cursor-not-allowed shadow-sm opacity-70">
+                                    Sin saldo pendiente
+                                </button>
+                            @endif
                         </div>
                     </div>
                 @endforeach
@@ -189,7 +196,7 @@
                                 class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition shadow-sm">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z">
+                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2-2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z">
                                     </path>
                                 </svg>
                                 Recibir Rendición

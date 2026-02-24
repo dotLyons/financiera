@@ -7,6 +7,7 @@ use App\Services\MonthlyReportService;
 use App\Src\Client\Models\ClientModel;
 use App\Src\Collectors\Models\CollectorDailyMetric;
 use App\Src\Credits\Models\CreditsModel;
+use App\Src\Installments\Models\InstallmentModel;
 use App\Src\Payments\Models\PaymentsModel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -148,21 +149,42 @@ class ReportController extends Controller
      */
     public function printDailyReport(User $user, string $date)
     {
-        $parsedDate = Carbon::parse($date);
+        $parsedDate = \Carbon\Carbon::parse($date);
 
-        // 1. Buscamos la métrica guardada (los totales fijos)
-        $metric = CollectorDailyMetric::where('user_id', $user->id)
-            ->whereDate('date', $parsedDate)
-            ->first();
-
-        // 2. Buscamos los movimientos detallados de ese día
-        $payments = PaymentsModel::where('user_id', $user->id)
+        $payments = \App\Src\Payments\Models\PaymentsModel::where('user_id', $user->id)
             ->whereDate('payment_date', $parsedDate)
             ->with('installment.credit.client')
             ->orderBy('created_at', 'asc')
             ->get();
 
-        $pdf = Pdf::loadView('pdf.daily-collector-report', [
+        $totalCollected = $payments->sum('amount');
+
+        $collectedCash = $payments->filter(function($p) {
+            $method = is_object($p->payment_method) ? $p->payment_method->value : $p->payment_method;
+            return $method === 'cash';
+        })->sum('amount');
+
+        $collectedTransfer = $totalCollected - $collectedCash;
+
+        $expectedAmount = \App\Src\Installments\Models\InstallmentModel::whereHas('credit', function ($q) use ($user) {
+            $q->where('collector_id', $user->id);
+        })->whereDate('due_date', $parsedDate)->sum('amount');
+
+        if ($expectedAmount > 0) {
+            $performancePercent = round(($totalCollected / $expectedAmount) * 100, 1);
+        } else {
+            $performancePercent = $totalCollected > 0 ? 100 : 0;
+        }
+
+        $metric = (object) [
+            'expected_amount'     => $expectedAmount,
+            'collected_total'     => $totalCollected,
+            'performance_percent' => $performancePercent,
+            'collected_cash'      => $collectedCash,
+            'collected_transfer'  => $collectedTransfer,
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.daily-collector-report', [
             'user' => $user,
             'date' => $parsedDate,
             'metric' => $metric,
@@ -187,5 +209,74 @@ class ReportController extends Controller
         $pdf->setPaper('A4', 'portrait');
 
         return $pdf->download("Reporte_Mensual_{$month}_{$year}.pdf");
+    }
+
+    /**
+     * Reporte 8: Hoja de Ruta Actual (Recorrido del Día)
+     */
+    public function printRoadmap(User $user)
+    {
+        $today = \Carbon\Carbon::today();
+
+        $installments = InstallmentModel::with(['credit.client', 'payments'])
+            ->whereHas('credit', function ($q) use ($user) {
+                $q->where('collector_id', $user->id)
+                  ->where('status', 'active');
+            })
+            ->where(function ($q) use ($today) {
+                $q->where(function ($sub) use ($today) {
+                    $sub->whereDate('due_date', '<=', $today)
+                        ->where('status', '!=', 'paid');
+                })
+                ->orWhereHas('payments', function ($sub) use ($today) {
+                    $sub->whereDate('payment_date', $today);
+                });
+            })
+            ->get();
+
+        $roadmap = [];
+        $totalPending = 0;
+        $totalCollected = 0;
+
+        foreach ($installments->groupBy('credit.client_id') as $clientId => $items) {
+            $client = $items->first()->credit->client;
+
+            $clientTotalPending = 0;
+            $clientTotalPaidToday = 0;
+
+            foreach ($items as $item) {
+                $paidToday = $item->payments->filter(function($p) use ($today) {
+                    return \Carbon\Carbon::parse($p->payment_date)->isSameDay($today);
+                })->sum('amount');
+
+                $pending = 0;
+                if ($item->status !== 'paid' && \Carbon\Carbon::parse($item->due_date)->startOfDay()->lte($today)) {
+                    $pending = $item->amount - $item->amount_paid;
+                }
+
+                $clientTotalPaidToday += $paidToday;
+                $clientTotalPending += $pending;
+            }
+
+            $totalPending += $clientTotalPending;
+            $totalCollected += $clientTotalPaidToday;
+
+            $roadmap[] = [
+                'client' => $client,
+                'items' => $items,
+                'paid_today' => $clientTotalPaidToday,
+                'pending' => $clientTotalPending
+            ];
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.collector-roadmap', [
+            'user' => $user,
+            'date' => $today,
+            'roadmap' => $roadmap,
+            'totalPending' => $totalPending,
+            'totalCollected' => $totalCollected
+        ]);
+
+        return $pdf->download("Hoja_Ruta_{$user->name}_{$today->format('Y-m-d')}.pdf");
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Livewire\Collector;
 
 use App\Src\Installments\Models\InstallmentModel;
-use App\Src\Payments\Models\PaymentModel;
 use App\Src\Payments\Enums\PaymentMethodsEnum;
 use App\Src\Payments\Models\PaymentsModel;
 use Illuminate\Support\Facades\DB;
@@ -56,8 +55,10 @@ class Checkout extends Component
                 'transaction_id' => $transactionId,
                 'payment_date' => now(),
                 'user_id' => auth()->id(),
-                'method' => $this->payment_method,
+                'payment_method' => $this->payment_method,
             ]);
+
+            auth()->user()->increment('wallet_balance', $paymentAmount);
 
             $regularDebt = $this->installment->amount - $this->installment->amount_paid;
 

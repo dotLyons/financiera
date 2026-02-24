@@ -3,7 +3,6 @@
 namespace App\Livewire\Payments;
 
 use App\Src\Installments\Models\InstallmentModel;
-use App\Src\Payments\Models\PaymentModel;
 use App\Src\Payments\Models\PaymentsModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -27,7 +26,6 @@ class CreatePayment extends Component
     {
         $this->installment = InstallmentModel::with('credit.client')->findOrFail($installmentId);
 
-        // Deuda de cuota pura + Deuda de mora
         $regularDebt = max(0, $this->installment->amount - $this->installment->amount_paid);
         $punitoryDebt = max(0, $this->installment->punitory_interest - $this->installment->punitory_paid);
 
@@ -99,10 +97,13 @@ class CreatePayment extends Component
                 'transaction_id' => $transactionId,
                 'payment_date' => now(),
                 'user_id' => auth()->id(),
-                'method' => $this->method,
+                'payment_method' => $this->method,
                 'notes' => 'Cobro Sistema Admin'
             ]);
             $lastPaymentId = $payment1->id;
+
+            // AHORA SUMA SIEMPRE (Efectivo, Transferencia, etc.)
+            auth()->user()->increment('wallet_balance', (float) $this->amount);
 
             $this->distributePayment((float) $this->amount);
 
@@ -115,10 +116,12 @@ class CreatePayment extends Component
                     'transaction_id' => $transactionId,
                     'payment_date' => now(),
                     'user_id' => auth()->id(),
-                    'method' => $this->secondMethod,
+                    'payment_method' => $this->secondMethod,
                     'notes' => 'Cobro Sistema Admin (Mixto)'
                 ]);
                 $lastPaymentId = $payment2->id;
+
+                auth()->user()->increment('wallet_balance', (float) $this->secondAmount);
 
                 $this->distributePayment((float) $this->secondAmount);
             }

@@ -13,7 +13,7 @@ class ReassignModal extends Component
     public ?User $sourceCollector = null;
     public $targetCollectorId = '';
 
-    public $creditsList = []; 
+    public $creditsList = [];
     public $selectedCredits = [];
     public $selectAll = false;
 

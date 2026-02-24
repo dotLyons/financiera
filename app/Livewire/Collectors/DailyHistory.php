@@ -3,9 +3,10 @@
 namespace App\Livewire\Collectors;
 
 use App\Models\User;
-use App\Src\Collectors\Models\CollectorDailyMetric;
+use App\Src\Payments\Models\PaymentsModel;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
 
 class DailyHistory extends Component
 {
@@ -20,7 +21,13 @@ class DailyHistory extends Component
 
     public function render()
     {
-        $metrics = CollectorDailyMetric::where('user_id', $this->collector->id)
+        $metrics = PaymentsModel::where('user_id', $this->collector->id)
+            ->select(
+                DB::raw('DATE(payment_date) as date'),
+                DB::raw('COUNT(id) as total_receipts'),
+                DB::raw('SUM(amount) as total_collected')
+            )
+            ->groupBy(DB::raw('DATE(payment_date)'))
             ->orderBy('date', 'desc')
             ->paginate(10);
 

@@ -41,7 +41,10 @@ class Index extends Component
             });
 
         $adminsWithCash = User::where('role', 'admin')
-            ->where('wallet_balance', '>', 0.01) // Solo si tienen saldo positivo
+            ->where(function ($query) {
+                $query->where('wallet_balance', '>', 0.01)
+                      ->orWhere('id', auth()->id());
+            })
             ->get();
 
         $moneyOnStreet = $collectors->sum('wallet_balance') + $adminsWithCash->sum('wallet_balance');
