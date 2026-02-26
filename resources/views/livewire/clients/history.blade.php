@@ -167,7 +167,6 @@
                     $totalPaid = $credit->installments->sum('amount_paid');
                     $totalAmount = $credit->amount_total;
 
-                    // NUEVO: Cálculos para la Mora (Generada y Pagada)
                     $totalPunitory = $credit->installments->sum('punitory_interest');
                     $totalPunitoryPaid = $credit->installments->sum('punitory_paid');
 
@@ -278,7 +277,7 @@
 
                             <div class="flex justify-end mb-4 space-x-3">
 
-                                @if ($credit->installments->where('status', 'paid')->count() === 0 && $credit->installments->sum('amount_paid') == 0)
+                                @if ($credit->status->value === 'active' || $credit->status->value === 'defaulted')
                                     <a href="{{ route('credits.edit', $credit) }}"
                                         class="inline-flex items-center px-3 py-2 bg-yellow-100 text-yellow-700 border border-yellow-300 rounded-md text-xs font-bold uppercase tracking-widest hover:bg-yellow-200 transition mr-2">
                                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor"
@@ -374,20 +373,19 @@
                                                         {{ $installment->due_date->format('d/m/Y') }}
                                                     </span>
 
-                                                    @if ($installment->status->value != 'paid')
-                                                        <button
-                                                            wire:click="$dispatch('openEditDateModal', { installmentId: {{ $installment->id }} })"
-                                                            class="text-gray-400 hover:text-blue-600 transition"
-                                                            title="Reprogramar fecha">
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                                viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                                    stroke-width="2"
-                                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
-                                                                </path>
-                                                            </svg>
-                                                        </button>
-                                                    @endif
+                                                    {{-- LÁPIZ DE EDICIÓN SIEMPRE VISIBLE --}}
+                                                    <button
+                                                        wire:click="$dispatch('openEditDateModal', { installmentId: {{ $installment->id }} })"
+                                                        class="text-gray-400 hover:text-indigo-600 transition"
+                                                        title="Editar Cuota / Pago">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
+                                                            </path>
+                                                        </svg>
+                                                    </button>
                                                 </div>
                                             </td>
 
@@ -413,10 +411,20 @@
 
                                             <td class="px-6 py-3 whitespace-nowrap text-center">
                                                 @if ($installment->status->value == 'paid')
-                                                    <span
-                                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                                    {{-- BOTÓN PAGADO AHORA ES CLICKEABLE --}}
+                                                    <button
+                                                        wire:click="$dispatch('openEditDateModal', { installmentId: {{ $installment->id }} })"
+                                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 hover:shadow-sm transition cursor-pointer"
+                                                        title="Editar datos del pago">
                                                         ✔ Pagado
-                                                    </span>
+                                                        <svg class="w-3 h-3 ml-1 opacity-70" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
+                                                            </path>
+                                                        </svg>
+                                                    </button>
                                                 @else
                                                     <div class="flex items-center justify-center space-x-2">
                                                         <button
