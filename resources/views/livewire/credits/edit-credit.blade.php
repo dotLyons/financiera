@@ -38,11 +38,12 @@
                     </div>
                     <div class="ml-3">
                         <p class="text-sm text-orange-700 font-bold uppercase tracking-wide">
-                            Dinero ya recaudado a conservar: <span class="text-lg ml-2">$
+                            Dinero ya recaudado a conservar: <span class="text-lg ml-2 font-black">$
                                 {{ number_format($totalAlreadyPaid, 2) }}</span>
                         </p>
                         <p class="text-xs text-orange-600 mt-1">
-                            El "Nuevo Monto Total" que calcules abajo debe ser <strong>mayor</strong> a esta cifra.
+                            El "Nuevo Total a Cobrar" que calcules abajo debe ser <strong>mayor</strong> a esta cifra
+                            para que la reestructuración sea válida.
                         </p>
                     </div>
                 </div>
@@ -79,13 +80,13 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
                         <div>
                             <x-label for="amount_net" value="Monto Neto ($)" />
-                            <input type="number" wire:model.live="amount_net"
+                            <input type="number" step="0.01" wire:model.live="amount_net"
                                 class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                             <x-input-error for="amount_net" class="mt-2" />
                         </div>
                         <div>
                             <x-label for="interest_rate" value="Interés (%)" />
-                            <input type="number" wire:model.live="interest_rate"
+                            <input type="number" step="0.01" wire:model.live="interest_rate"
                                 class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                         <div>
@@ -132,7 +133,7 @@
                         <x-label for="edition_reason" value="Motivo de la corrección" />
                         <textarea wire:model="edition_reason" rows="2"
                             class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
-                            placeholder="Ej: El cliente solicitó alargar las cuotas porque se le dificultaba el pago..."></textarea>
+                            placeholder="Ej: Reestructuración de saldo y cuotas a pedido del cliente..."></textarea>
                         <x-input-error for="edition_reason" class="mt-2" />
 
                         @error('base')
@@ -143,7 +144,7 @@
                 </div>
 
                 <div class="bg-gray-50 px-8 py-4 flex items-center justify-end border-t border-gray-200">
-                    <x-button class="bg-red-600 hover:bg-red-700">
+                    <x-button class="bg-red-600 hover:bg-red-700 transition">
                         Aplicar Reestructuración
                     </x-button>
                 </div>
